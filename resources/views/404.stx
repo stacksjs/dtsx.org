@@ -1,0 +1,10 @@
+<script server>
+const title = 'Page not found'
+const description = 'This page could not be found. Return to dtsx documentation or benchmarks.'
+const pathname = '/404/'
+</script>
+<script client>
+const theme = useColorMode({ attribute: 'data-theme' })
+</script>
+@nolayout
+<!DOCTYPE html><html lang="en"><head>@include('head')<meta name="robots" content="noindex"></head><body>@include('nav')<main id="main" class="document-main shell"><div class="document-heading"><p>404</p><h1>This export<br><span>doesn't exist.</span></h1><p>Head back to the homepage or open the documentation.</p><a class="button button-primary" href="/">Back to dtsx →</a></div></main>@include('footer')</body></html>

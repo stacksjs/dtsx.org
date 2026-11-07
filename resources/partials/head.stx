@@ -1,0 +1,16 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#195dff">
+<title>{{ title }} | dtsx</title>
+<meta name="description" content="{{ description }}">
+<link rel="canonical" href="https://dtsx.org{{ pathname }}">
+<meta property="og:type" content="website">
+<meta property="og:title" content="{{ title }} | dtsx">
+<meta property="og:description" content="{{ description }}">
+<meta property="og:url" content="https://dtsx.org{{ pathname }}">
+<meta property="og:image" content="https://dtsx.org/assets/social.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<link rel="preload" href="/fonts/geist-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/assets/utilities.css">
+<link rel="stylesheet" href="/assets/site.css">

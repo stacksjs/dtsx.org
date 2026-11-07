@@ -1,0 +1,43 @@
+<script server>
+const title = 'Get started with dtsx'
+const description = 'Install dtsx, generate TypeScript declarations, configure bundling, and connect the API to your existing build.'
+const pathname = '/docs/'
+const apiExample = `import { generate } from '@stacksjs/dtsx'\n\nconst stats = await generate({\n  root: './src',\n  entrypoints: ['index.ts'],\n  outdir: './dist/types',\n  keepComments: true,\n})\n\nif (stats.filesFailed > 0) {\n  throw new Error('Declaration generation failed')\n}`
+const configExample = `import { defineConfig } from '@stacksjs/dtsx'\n\nexport default defineConfig({\n  root: './src',\n  entrypoints: ['index.ts'],\n  outdir: './dist/types',\n  bundle: true,\n  bundleOutput: 'index.d.ts',\n  keepComments: true,\n})`
+const viteExample = `import { defineConfig } from 'vite'\nimport { dts } from '@stacksjs/dtsx/vite'\n\nexport default defineConfig({\n  plugins: [dts({\n    root: './src',\n    outdir: './dist/types',\n  })],\n})`
+</script>
+<script client>
+const theme = useColorMode({ attribute: 'data-theme' })
+const copied = state(false)
+async function copyInstall() { copied.set(await copyToClipboard('bun add -d @stacksjs/dtsx')) }
+</script>
+@nolayout
+<!DOCTYPE html>
+<html lang="en">
+<head>@include('head')</head>
+<body>
+@include('nav')
+<main id="main" class="document-main shell">
+  <a class="back-link" href="/">← Back to dtsx</a>
+  <div class="document-heading"><h1>A few lines.<br><span>Then ship your types.</span></h1><p>Start with the CLI. Reach for the TypeScript API when your build needs more control.</p></div>
+  <div class="docs-layout"><aside class="docs-sidebar"><nav aria-label="On this page"><a href="#install">Installation</a><a href="#cli">CLI</a><a href="#configuration">Configuration</a><a href="#api">TypeScript API</a><a href="#integrations">Integrations</a><a href="#publish">Publishing your types</a></nav></aside>
+  <div class="docs-content">
+    <section id="install"><h2>Install dtsx.</h2><p>Use <a href="https://bun.sh/docs/installation">Bun</a> to install the package in your library.</p><button class="install-command" @click="copyInstall()" type="button" aria-label="Copy install command"><span class="command-prompt" aria-hidden="true">$</span><code>bun add -d @stacksjs/dtsx</code><span class="copy-label" aria-live="polite">{{ copied() ? 'Copied' : 'Copy' }}</span></button><p>This adds the <code>dtsx</code> executable to your project. Commit your lockfile to keep builds reproducible.</p></section>
+    <section id="cli"><h2>Your first declarations.</h2><p>Run the installed CLI from your project directory.</p><pre><code>bunx --no-install dtsx generate</code></pre><p>By default, dtsx reads your source directory and writes declarations to <code>dist</code>. Set the root, entrypoints, and output location in a config file.</p><p>For an existing build script, append <code>dtsx generate</code> after your JavaScript build. Keep a separate TypeScript check in CI.</p></section>
+    <section id="configuration"><h2>Give your types a home.</h2><p>Create <code>dts.config.ts</code> in your project root. This example bundles the public entry into one declaration file.</p><pre><code>{{ configExample }}</code></pre><p>Set <code>bundle: false</code> to emit per-file declarations. Options also include <code>watch</code>, <code>incremental</code>, <code>declarationMap</code>, and <code>exclude</code>. Check the <a href="https://github.com/stacksjs/dtsx/blob/main/docs/guide/configuration.md">configuration reference</a> for the full surface.</p><div class="notice"><h3>About isolated declarations</h3><p>dtsx can generate declarations with or without TypeScript's <code>isolatedDeclarations</code> option. Explicit public annotations make your intended API clear and enable annotation-first generation. Our published benchmark fixtures use explicit annotations.</p></div></section>
+    <section id="api"><h2>Make it part of your build.</h2><p>Call <code>generate()</code> from TypeScript and check its result before continuing your release.</p><pre><code>{{ apiExample }}</code></pre><p>The same config file is available to the library API. Explicit options let you keep build-specific behavior close to the build script.</p></section>
+    <section id="integrations"><h2>Bring your bundler.</h2><p>dtsx has integrations for Bun, Vite, esbuild, tsup, and webpack. Here is a Vite setup:</p><pre><code>{{ viteExample }}</code></pre><div class="document-links"><a href="https://github.com/stacksjs/dtsx/tree/main/packages/bun-plugin">Bun plugin ↗</a><a href="https://github.com/stacksjs/dtsx/tree/main/packages/vite-plugin">Vite ↗</a><a href="https://github.com/stacksjs/dtsx/tree/main/packages/esbuild-plugin">esbuild ↗</a><a href="https://github.com/stacksjs/dtsx/tree/main/packages/tsup-plugin">tsup ↗</a><a href="https://github.com/stacksjs/dtsx/tree/main/packages/webpack-plugin">webpack ↗</a></div></section>
+    <section id="publish"><h2>Point consumers at your types.</h2><p>Set your package's <code>types</code> field to its generated entry. If you use an exports map, add the matching types condition.</p><pre><code>{
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  }
+}</code></pre><p>Test a packed installation with a strict consumer before publishing. Declaration generation and a full semantic typecheck do different work.</p><a class="text-link" href="https://github.com/stacksjs/dtsx/issues">Ask a question or report an issue ↗</a></section>
+  </div></div>
+</main>
+@include('footer')
+</body>
+</html>

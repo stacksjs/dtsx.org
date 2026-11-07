@@ -1,0 +1,5 @@
+<footer class="shell site-footer">
+  <a class="wordmark" href="/" aria-label="dtsx home">dts<span class="brand-x">x</span><span class="brand-square" aria-hidden="true">.</span></a>
+  <p>An open-source tool from <a href="https://stacksjs.com">Stacks</a>.</p>
+  <div><a href="https://github.com/stacksjs/dtsx/blob/main/LICENSE.md">MIT License</a><a href="https://github.com/stacksjs/dtsx.org">Website source <span aria-hidden="true">↗</span></a></div>
+</footer>

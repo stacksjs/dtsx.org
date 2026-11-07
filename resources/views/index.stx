@@ -1,0 +1,77 @@
+<script server>
+import report from '~/public/benchmarks/results.json'
+import example from '~/resources/data/example.json'
+const title = 'TypeScript declarations. Ready to ship.'
+const description = 'Generate .d.ts files with Bun. Use the CLI, call the API, and explore transparent benchmarks for your library build.'
+const pathname = '/'
+const seed = 'dtsx.org'.length
+const heroLayouts = ['cinematic-center', 'artistic-asymmetry', 'editorial-split']
+const heroLayout = heroLayouts[seed % heroLayouts.length]
+const typeStack = ['geist', 'satoshi', 'cabinet-grotesk', 'outfit'][(seed * 7) % 4]
+const componentFamilies = ['code-preview', 'benchmark-ledger', 'integration-grid']
+const selectedFamilies = componentFamilies.map((_, index) => componentFamilies[(seed + index) % componentFamilies.length])
+const selectedMotion = ['scroll-reveal', 'sticky-stack']
+const comparison = report.results.filter(row => row.modules === 100 && row.group === 'bundled-project' && row.status === 'passed').sort((a, b) => a.medianMs - b.medianMs)
+const codeInput = example.source
+const codeOutput = example.declaration
+</script>
+<script client>
+const theme = useColorMode({ attribute: 'data-theme' })
+const preview = state('output')
+const copied = state(false)
+async function copyInstall() {
+  copied.set(await copyToClipboard('bun add -d @stacksjs/dtsx'))
+}
+</script>
+@nolayout
+<!DOCTYPE html>
+<html lang="en">
+<head>@include('head')</head>
+<body>
+@include('nav')
+<main id="main" class="overflow-x-hidden max-w-full w-full">
+  <section class="shell hero {{ heroLayout }} {{ typeStack }}" aria-labelledby="hero-title">
+    <div class="hero-copy">
+      <h1 id="hero-title" class="max-w-6xl">Your types.<br><span>Ready to ship.</span></h1>
+      <p class="hero-description">TypeScript declarations that fit your workflow. Generate <code>.d.ts</code> files with Bun, from your first export to your next release.</p>
+      <div class="hero-actions"><a class="button button-primary" href="/docs/">Start building <span aria-hidden="true">↗</span></a><a class="text-link" href="/benchmarks/">See the benchmarks <span aria-hidden="true">→</span></a></div>
+      <button class="install-command" @click="copyInstall()" type="button" aria-label="Copy install command"><span class="command-prompt" aria-hidden="true">$</span><code>bun add -d @stacksjs/dtsx</code><span class="copy-label" aria-live="polite">{{ copied() ? 'Copied' : 'Copy' }}</span></button>
+    </div>
+    <div class="hero-art" aria-label="TypeScript source becomes a declaration file">
+      <div class="source-sheet"><span class="file-caption">src/index.ts</span><div class="source-lines" aria-hidden="true"><span>export</span> function greet(...) {<br>&nbsp; return `Hello, ${options.name}`<br>}</div><span class="source-extension">.ts</span></div>
+      <div class="declaration-sheet"><div class="sheet-top"><span class="file-caption">dist/index.d.ts</span><span class="file-tag">DECLARATION</span></div><span class="declaration-extension">d.ts<span class="file-cursor" aria-hidden="true">_</span></span><code><span>export declare</span><br>function greet(options: Options): string;</code><div class="sheet-bottom"><span>Public API, preserved.</span><span aria-hidden="true">↗</span></div></div>
+      <div class="art-grid" aria-hidden="true"></div>
+    </div>
+  </section>
+  <div class="capability-line shell"><span>Built for Bun</span><span>CLI + TypeScript API</span><span>MIT licensed</span><span>Open source, all the way down</span></div>
+  <section class="section shell" aria-labelledby="workflow-title">
+    <div class="section-heading"><h2 id="workflow-title">A small step in your build.<br>A proper home for your types.</h2><p>Keep writing your library. Let dtsx handle the declarations.</p></div>
+    <div class="grid grid-cols-1 grid-flow-dense md:grid-cols-4 feature-grid">
+      <article class="md:col-span-2 feature feature-main"><span class="feature-symbol" aria-hidden="true">{ }</span><h3>Your code stays yours.</h3><p>Emit declarations from TypeScript, TSX, Vue, and STX. Keep the comments that make your public API useful.</p><div class="file-flow" aria-hidden="true"><span>source.ts</span><span>→</span><strong>source.d.ts</strong></div></article>
+      <article class="feature feature-blue"><span class="feature-symbol" aria-hidden="true">↗</span><h3>Choose your shape.</h3><p>Mirror your source files or bundle declarations into one public entry.</p><span class="feature-type" aria-hidden="true">.d.ts</span></article>
+      <article class="feature feature-dark"><span class="feature-symbol" aria-hidden="true">↻</span><h3>Stay in the loop.</h3><p>Watch mode and incremental generation keep declaration work in your development flow.</p><a class="underlined-link" href="/docs/#configuration">Explore configuration <span aria-hidden="true">→</span></a></article>
+    </div>
+  </section>
+  <section class="code-section section" aria-labelledby="code-title">
+    <div class="code-layout shell">
+      <div class="sticky-copy"><h2 id="code-title">Implementation in.<br>Public API out.</h2><p>Readable declarations, generated from real source. This example is emitted by dtsx when the website builds.</p><a class="text-link" href="/docs/#api">Meet the TypeScript API <span aria-hidden="true">→</span></a></div>
+      <div class="code-preview">
+        <div class="code-tabs" role="group" aria-label="Code example"><button type="button" :aria-pressed="preview() === 'input'" @click="preview.set('input')">Source <span>index.ts</span></button><button type="button" :aria-pressed="preview() === 'output'" @click="preview.set('output')">Declaration <span>index.d.ts</span></button></div>
+        <pre :if="preview() === 'input'"><code>{{ codeInput }}</code></pre><pre :if="preview() === 'output'"><code>{{ codeOutput }}</code></pre>
+        <div class="code-note"><span>TypeScript → declarations</span><span>Same API. Ready for consumers.</span></div>
+      </div>
+    </div>
+  </section>
+  <section class="benchmark-section section shell" aria-labelledby="bench-title">
+    <div class="section-heading"><h2 id="bench-title">Measure the work.<br>Show the numbers.</h2><p>Fresh processes. Identical inputs. Declarations checked after every run.</p></div>
+    <div class="benchmark-summary"><div><span class="eyebrow">Bundled declarations</span><h3>100 modules + one entrypoint</h3><p>Nine measured samples per tool.<br>Median wall-clock time, including startup.</p><a class="text-link" href="/benchmarks/">Explore every result <span aria-hidden="true">↗</span></a></div>
+      <div class="benchmark-ledger"><table><caption class="sr-only">Standalone declaration bundle medians for 100 modules</caption><thead><tr><th scope="col">Tool</th><th scope="col">Median</th></tr></thead><tbody>@foreach(comparison as row)<tr class="{{ row.id === 'dtsx-bundle' ? 'highlight-row' : '' }}"><th scope="row">{{ row.name }} @if(row.id === 'dtsx-bundle')<span class="our-tool">dtsx</span>@endif</th><td>{{ row.medianMs.toFixed(1) }} <span>ms</span></td></tr>@endforeach</tbody></table></div>
+    </div>
+    <p class="benchmark-caveat">Apple M3 Pro · Bun 1.4.4 · November 7, 2026. Synthetic, annotated libraries. Tools perform different amounts of checking and bundling. Oxc leads the separate per-file emission workload. <a href="/benchmarks/#methodology">Read the methodology.</a></p>
+  </section>
+  <section class="integration-section section" aria-labelledby="integration-title"><div class="shell"><div class="section-heading"><h2 id="integration-title">Right where you build.</h2><p>Use the CLI on its own or add declaration generation to your build.</p></div><div class="integration-grid"><a href="/docs/#cli"><span class="integration-glyph">›_</span><strong>CLI</strong><span>One command away ↗</span></a><a href="/docs/#api"><span class="integration-glyph">{ }</span><strong>TypeScript API</strong><span>Make it your own ↗</span></a><a href="/docs/#integrations"><span class="integration-glyph">∿</span><strong>Your bundler</strong><span>Bun, Vite, esbuild, tsup, webpack ↗</span></a></div></div></section>
+  <section class="closing shell"><h2>Make your next release<br><span>the typed one.</span></h2><a class="button button-primary" href="/docs/#install">Install dtsx <span aria-hidden="true">↗</span></a><p>Free to use. Open to contributions.</p></section>
+</main>
+@include('footer')
+</body>
+</html>

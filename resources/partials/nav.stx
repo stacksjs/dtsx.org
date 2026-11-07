@@ -1,0 +1,12 @@
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header">
+  <nav class="nav shell" aria-label="Main navigation">
+    <a class="wordmark" href="/" aria-label="dtsx home">dts<span class="brand-x">x</span><span class="brand-square" aria-hidden="true">.</span></a>
+    <div class="nav-links">
+      <a href="/docs/">Documentation</a>
+      <a href="/benchmarks/">Benchmarks</a>
+      <a class="github-link" href="https://github.com/stacksjs/dtsx">GitHub <span aria-hidden="true">↗</span></a>
+      <button class="theme-button" type="button" @click="theme.toggle()" aria-label="Toggle color theme"><span aria-hidden="true">◐</span></button>
+    </div>
+  </nav>
+</header>

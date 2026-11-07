@@ -1,0 +1,4 @@
+{
+  "source": "export interface Options {\n  name: string\n  retries?: number\n}\n\nexport function greet(options: Options): string {\n  return `Hello, ${options.name}`\n}",
+  "declaration": "export declare function greet(options: Options): string;\nexport declare interface Options {\n  name: string\n  retries?: number\n}"
+}

@@ -1,0 +1,85 @@
+{
+  "name": "dtsx-org",
+  "type": "module",
+  "version": "0.0.0",
+  "private": true,
+  "description": "TypeScript declarations, built for your workflow. The dtsx website and benchmark lab.",
+  "engines": {
+    "bun": "1.4.4"
+  },
+  "scripts": {
+    "buddy": "./buddy",
+    "stacks": "./buddy",
+    "setup": "./bootstrap",
+    "fresh": "./buddy fresh",
+    "clean": "./buddy clean",
+    "upgrade": "./buddy upgrade",
+    "dev": "./buddy dev",
+    "development": "./buddy dev",
+    "build": "./buddy build:views",
+    "prod": "./buddy build",
+    "deploy": "./buddy deploy",
+    "lint": "./buddy lint",
+    "lint:fix": "./buddy lint:fix",
+    "format": "./buddy format",
+    "format:check": "./buddy format:check",
+    "serve": "./buddy serve",
+    "make": "./buddy make",
+    "make:component": "./buddy make:component",
+    "make:function": "./buddy make:function",
+    "make:migration": "./buddy make:migration",
+    "make:notification": "./buddy make:notification",
+    "make:factory": "./buddy make:factory",
+    "make:lang": "./buddy make:lang",
+    "make:stack": "./buddy make:stack",
+    "key:generate": "./buddy key:generate",
+    "commit": "./buddy commit",
+    "changelog": "./buddy changelog",
+    "generate": "./buddy generate",
+    "typecheck": "bun x --bun tsc --noEmit -p tsconfig.site.json",
+    "typecheck:app": "bun x --bun tsc --noEmit -p tsconfig.json --pretty false",
+    "typecheck:views": "bun x --bun stx typecheck --lib storage/framework/types/request-context.d.ts --lib storage/framework/types/browser-composables.d.ts 'resources/**/*.stx'",
+    "typecheck:clean": "bunx --bun rimraf storage/framework/.cache/typescript",
+    "types:check": "bun run typecheck",
+    "types:fix": "./buddy types:fix",
+    "test": "bun test ./tests/website.test.ts",
+    "bud": "./buddy",
+    "probe:integrations": "./buddy integrations:probe",
+    "benchmark": "cd benchmarks && bun run.ts",
+    "benchmark:smoke": "cd benchmarks && bun run.ts --smoke"
+  },
+  "dependencies": {
+    "@stacksjs/stx": "0.2.807",
+    "stacks": "^0.75.513",
+    "@stacksjs/env": "^0.75.513",
+    "@stacksjs/path": "^0.75.513",
+    "@stacksjs/actions": "^0.75.513",
+    "@stacksjs/ts-css": "0.3.24",
+    "@stacksjs/dtsx": "0.11.31"
+  },
+  "workspaces": [
+    "storage/framework",
+    "storage/framework/libs/*",
+    "storage/framework/views/*"
+  ],
+  "git-hooks": {
+    "pre-commit": {
+      "staged-lint": {
+        "*.{js,ts,json,yaml,yml,md}": "bun x --bun pickier lint --fix"
+      }
+    },
+    "commit-msg": "bun x gitlint --edit \"$1\""
+  },
+  "devDependencies": {
+    "@actions/expressions": "0.3.61",
+    "@stacksjs/components": "0.2.807",
+    "better-dx": "^0.2.37",
+    "bun-plugin-stx": "0.2.807"
+  },
+  "author": "Chris Breuer <chris@stacksjs.com>",
+  "homepage": "https://dtsx.org",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/stacksjs/dtsx.org.git"
+  }
+}

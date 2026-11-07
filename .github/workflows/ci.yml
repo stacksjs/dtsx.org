@@ -1,0 +1,87 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+      - run: bun install --frozen-lockfile
+      - name: Lint with Stacks
+        run: ./buddy lint
+      - name: Typecheck
+        run: bun run typecheck
+      - name: Build with Stacks
+        run: ./buddy build:views
+      - name: Verify pages and benchmark evidence
+        run: bun run test
+      - uses: actions/upload-artifact@v7
+        with:
+          name: website
+          path: dist
+          retention-days: 7
+  deploy:
+    needs: check
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    environment:
+      name: production
+      url: https://dtsx.org
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+      - run: bun install --frozen-lockfile
+      - name: Install the pinned host key and deploy identity
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_SSH_KEY"
+          test -n "$SSH_KNOWN_HOSTS"
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keygen -y -f ~/.ssh/id_ed25519 > ~/.ssh/id_ed25519.pub
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/id_ed25519.pub
+          chmod 600 ~/.ssh/known_hosts
+      - name: Deploy with the native Stacks action
+        run: ./buddy deploy --prod --yes
+        env:
+          APP_ENV: production
+          APP_KEY: ${{ secrets.APP_KEY }}
+          HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
+          PORKBUN_API_KEY: ${{ secrets.PORKBUN_API_KEY }}
+          PORKBUN_SECRET_KEY: ${{ secrets.PORKBUN_SECRET_KEY }}
+      - name: Verify HTTPS and deployed content
+        run: |
+          curl --fail --retry 6 --retry-delay 10 --retry-all-errors https://dtsx.org/ -o /tmp/home.html
+          grep -q 'TypeScript declarations' /tmp/home.html
+          curl --fail --retry 3 https://dtsx.org/benchmarks/results.json -o /tmp/benchmarks.json
+          bun -e "const r=await Bun.file('/tmp/benchmarks.json').json();if(r.smoke||r.results.length!==48)throw new Error('Missing full benchmark evidence')"

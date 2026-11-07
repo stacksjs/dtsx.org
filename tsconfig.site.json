@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "allowImportingTsExtensions": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "types": ["bun"]
+  },
+  "include": ["build.ts", "scripts/**/*.ts", "tests/website.test.ts", "config/cloud.ts", "config/css.ts"],
+  "exclude": ["benchmarks", "node_modules", "storage"]
+}
