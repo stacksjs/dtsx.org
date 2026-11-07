@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto'
 import { cp, mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { arch, platform, tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { dlopen, FFIType } from 'bun:ffi'
 import release from './zig-release.json'
 
 function sha256(bytes: Uint8Array): string {
@@ -12,6 +13,15 @@ function sha256(bytes: Uint8Array): string {
 const directory = join(import.meta.dir, '.native/zig-dtsx')
 const platformKey = `${platform() === 'win32' ? 'windows' : platform()}-${arch()}`
 const artifact = release.libraries[platformKey as keyof typeof release.libraries]
+
+/** Preserve the actual system loader error instead of hiding it in the binding's fallback. */
+function verifyNativeLoader(): void {
+  if (!artifact) throw new Error(`No pinned Zig artifact for ${platformKey}`)
+  const library = dlopen(join(directory, 'prebuilt', platformKey, artifact.file), {
+    result_length: { args: [FFIType.ptr], returns: FFIType.u64 },
+  })
+  library.close()
+}
 
 async function download(url: string, expected: string): Promise<Uint8Array> {
   const response = await fetch(url, { signal: AbortSignal.timeout(30_000) })
@@ -56,6 +66,7 @@ export async function setupNativeZig(): Promise<void> {
   if (!artifact) throw new Error(`No pinned Zig artifact for ${platformKey}`)
   try {
     await nativeProvenance()
+    verifyNativeLoader()
     console.log(`zig-dtsx ${release.version} (${platformKey}) verified`)
     return
   }
@@ -95,6 +106,7 @@ export async function setupNativeZig(): Promise<void> {
     await rm(directory, { recursive: true, force: true })
     await rename(pending, directory)
     await nativeProvenance()
+    verifyNativeLoader()
     console.log(`Installed verified zig-dtsx ${release.version} (${platformKey})`)
   }
   finally {

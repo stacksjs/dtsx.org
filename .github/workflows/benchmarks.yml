@@ -1,6 +1,16 @@
 name: Benchmark lab
 on:
   workflow_dispatch:
+    inputs:
+      platform:
+        description: Platform to measure
+        type: choice
+        options: [all, linux, macos]
+        default: all
+      qualification_only:
+        description: Qualify native Zig without collecting published timings
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -9,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: ${{ fromJSON(inputs.platform == 'linux' && '["ubuntu-latest"]' || inputs.platform == 'macos' && '["macos-latest"]' || '["ubuntu-latest","macos-latest"]') }}
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v6
@@ -22,14 +32,15 @@ jobs:
         run: bun setup-zig.ts
         working-directory: benchmarks
       - name: Clear the previous snapshot from the measurement output
+        if: ${{ !inputs.qualification_only }}
         run: bun -e "const fs = await import('node:fs/promises'); await fs.unlink('../public/benchmarks/results.json')"
         working-directory: benchmarks
       - name: Run sequential qualified benchmarks
-        run: bun run.ts --require-all
+        run: bun run.ts ${{ inputs.qualification_only && '--smoke --tools=zig' || '' }} --require-all
         working-directory: benchmarks
       - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: benchmark-results-${{ matrix.os }}
-          path: public/benchmarks/results.json
+          path: ${{ inputs.qualification_only && 'benchmarks/smoke.json' || 'public/benchmarks/results.json' }}
           retention-days: 90
