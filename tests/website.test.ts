@@ -61,5 +61,28 @@ test('the homepage publishes the actual full-run bundled medians', async () => {
     expect(html).toContain(row.medianMs.toFixed(1))
   }
   const winner = report.results.filter((row: { modules: number, group: string }) => row.modules === 100 && row.group === 'project-emit').sort((a: { medianMs: number }, b: { medianMs: number }) => a.medianMs - b.medianMs)[0]
-  expect(html).toContain(`${winner.name} leads`)
+  expect(html).toContain(`${winner.name} has the lowest median`)
+})
+
+test('macOS and Linux snapshots stay separate and use the same qualified workload', async () => {
+  const linux = await Bun.file(join(root, 'public/benchmarks/results-linux.json')).json()
+  expect(report.machine.platform).toBe('darwin')
+  expect(linux.machine.platform).toBe('linux')
+  expect(report.executionEnvironment.kind).toBe('github-actions')
+  expect(linux.executionEnvironment.kind).toBe('github-actions')
+  expect(linux.executionEnvironment.commit).toBe(report.executionEnvironment.commit)
+  expect(linux.nativeZig.commit).toBe(report.nativeZig.commit)
+  expect(linux.results).toHaveLength(48)
+  for (const row of linux.results) {
+    if (row.id === 'zig') {
+      expect(row.status).toBe('failed')
+      expect(row.samplesMs).toHaveLength(0)
+      expect(row.medianMs).toBeNull()
+      expect(row.error).toContain('Pinned Zig library could not be loaded')
+    }
+    else {
+      expect(row.status).toBe('passed')
+      expect(row.samplesMs).toHaveLength(9)
+    }
+  }
 })

@@ -17,11 +17,11 @@ bun run test
 
 ## Benchmarks
 
-The benchmark toolchain has its own manifest and lockfile under [`benchmarks`](benchmarks/README.md). Install there and run `bun setup-zig.ts` before running it. The Zig binding and platform library come from a checksum-pinned official release. Published numbers come from `public/benchmarks/results.json`; the site reads that file directly. The manual **Benchmark lab** GitHub workflow runs the same suite on macOS and Linux and saves an artifact for review. It does not automatically replace the published single-machine snapshot.
+The benchmark toolchain has its own manifest and lockfile under [`benchmarks`](benchmarks/README.md). Install there and run `bun setup-zig.ts` before running it. The Zig binding and platform library come from a checksum-pinned official release. The site reads its macOS snapshot from `public/benchmarks/results.json`; Linux results are published separately in `public/benchmarks/results-linux.json`. The manual **Benchmark lab** GitHub workflow runs the same suite on both platforms and saves artifacts for review. It does not automatically replace the published snapshots.
 
 ## Deployment
 
-Pushes to `main` run lint, typechecking, the native Stacks view build, artifact checks, and native Zig qualification on macOS and Linux. After those pass, the same workflow calls `./buddy deploy --prod --yes`. Deploys are serialized and use the exact checked commit. Pull requests never receive production credentials or deploy.
+Pushes to `main` run lint, typechecking, the native Stacks view build, artifact checks, and native Zig qualification on Apple silicon and Intel macOS runners. After those pass, the same workflow calls `./buddy deploy --prod --yes`. Deploys are serialized and use the exact checked commit. Pull requests never receive production credentials or deploy. The separate Benchmark lab workflow retains Linux qualification failures rather than treating an unavailable native binary as a valid measurement.
 
 `config/cloud.ts` declares an isolated server-static tenant on the existing Stacks host, plus a permanent www redirect. Stacks handles packaging, release activation, reverse-proxy configuration, and TLS. No frontend app service or database is needed.
 
