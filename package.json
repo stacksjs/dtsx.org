@@ -45,8 +45,8 @@
     "test": "bun test ./tests/website.test.ts",
     "bud": "./buddy",
     "probe:integrations": "./buddy integrations:probe",
-    "benchmark": "cd benchmarks && bun run.ts",
-    "benchmark:smoke": "cd benchmarks && bun run.ts --smoke"
+    "benchmark": "cd benchmarks && bun setup-zig.ts && bun run.ts",
+    "benchmark:smoke": "cd benchmarks && bun setup-zig.ts && bun run.ts --smoke"
   },
   "dependencies": {
     "@stacksjs/stx": "0.2.807",

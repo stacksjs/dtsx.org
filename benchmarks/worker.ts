@@ -22,7 +22,7 @@ if (tool === 'dtsx' || tool === 'dtsx-bundle') {
 else if (['oxc', 'swc', 'zig', 'ts-transpile'].includes(tool)) {
   const oxc = tool === 'oxc' ? await import('oxc-transform') : undefined
   const swc = tool === 'swc' ? await import('@swc/core') : undefined
-  const zig = tool === 'zig' ? await import('@stacksjs/zig-dtsx') : undefined
+  const zig = tool === 'zig' ? await import('./native-zig') : undefined
   const ts = tool === 'ts-transpile' ? await import('typescript') : undefined
   for (const file of files) {
     const source = await readFile(join(cwd, 'src', file), 'utf8')
@@ -36,7 +36,10 @@ else if (['oxc', 'swc', 'zig', 'ts-transpile'].includes(tool)) {
       const result = swc.transformSync(source, { filename: file, swcrc: false, configFile: false, jsc: { parser: { syntax: 'typescript' }, experimental: { emitIsolatedDts: true }, target: 'esnext' } })
       output = JSON.parse(result.output ?? '{}').__swc_isolated_declarations__ ?? ''
     }
-    if (zig) output = zig.processSource(source, true)
+    if (zig) {
+      if (!zig.ZIG_AVAILABLE) throw new Error('Pinned Zig library could not be loaded')
+      output = zig.processSource(source, true, true)
+    }
     if (ts) {
       const result = ts.transpileDeclaration(source, { fileName: join(cwd, 'src', file), compilerOptions: options, reportDiagnostics: true })
       if (result.diagnostics?.length) throw new Error(JSON.stringify(result.diagnostics))

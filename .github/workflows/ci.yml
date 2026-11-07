@@ -33,8 +33,29 @@ jobs:
           name: website
           path: dist
           retention-days: 7
+  native-zig:
+    name: Qualify released Zig (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+      - run: bun install --frozen-lockfile
+        working-directory: benchmarks
+      - name: Install checksum-pinned native release
+        run: bun setup-zig.ts
+        working-directory: benchmarks
+      - name: Qualify actual native declaration output
+        run: bun run.ts --smoke --tools=zig --require-all
+        working-directory: benchmarks
   deploy:
-    needs: check
+    needs: [check, native-zig]
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -84,4 +105,4 @@ jobs:
           curl --fail --retry 6 --retry-delay 10 --retry-all-errors https://dtsx.org/ -o /tmp/home.html
           grep -q 'TypeScript declarations' /tmp/home.html
           curl --fail --retry 3 https://dtsx.org/benchmarks/results.json -o /tmp/benchmarks.json
-          bun -e "const r=await Bun.file('/tmp/benchmarks.json').json();if(r.smoke||r.results.length!==48)throw new Error('Missing full benchmark evidence')"
+          bun -e "const r=await Bun.file('/tmp/benchmarks.json').json();if(r.smoke||r.results.length!==48||r.results.some(row=>row.status!=='passed'))throw new Error('Missing full benchmark evidence')"

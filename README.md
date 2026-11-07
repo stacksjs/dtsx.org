@@ -17,11 +17,11 @@ bun run test
 
 ## Benchmarks
 
-The benchmark toolchain has its own manifest and lockfile under [`benchmarks`](benchmarks/README.md). Install there before running it. Published numbers come from `public/benchmarks/results.json`; the site reads that file directly. The manual **Benchmark lab** GitHub workflow runs the same suite on Linux and saves an artifact for review. It does not automatically replace the published single-machine snapshot.
+The benchmark toolchain has its own manifest and lockfile under [`benchmarks`](benchmarks/README.md). Install there and run `bun setup-zig.ts` before running it. The Zig binding and platform library come from a checksum-pinned official release. Published numbers come from `public/benchmarks/results.json`; the site reads that file directly. The manual **Benchmark lab** GitHub workflow runs the same suite on macOS and Linux and saves an artifact for review. It does not automatically replace the published single-machine snapshot.
 
 ## Deployment
 
-Pushes to `main` run lint, typechecking, the native Stacks view build, and artifact checks. After those pass, the same workflow calls `./buddy deploy --prod --yes`. Deploys are serialized and use the exact checked commit. Pull requests never receive production credentials or deploy.
+Pushes to `main` run lint, typechecking, the native Stacks view build, artifact checks, and native Zig qualification on macOS and Linux. After those pass, the same workflow calls `./buddy deploy --prod --yes`. Deploys are serialized and use the exact checked commit. Pull requests never receive production credentials or deploy.
 
 `config/cloud.ts` declares an isolated server-static tenant on the existing Stacks host, plus a permanent www redirect. Stacks handles packaging, release activation, reverse-proxy configuration, and TLS. No frontend app service or database is needed.
 

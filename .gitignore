@@ -218,3 +218,5 @@ benchmarks/.zig-cache/
 /storage/framework/api/
 /storage/framework/database/model-snapshot.*.json
 /database/types.d.ts
+
+benchmarks/.native/
