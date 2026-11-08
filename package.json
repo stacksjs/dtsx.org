@@ -55,7 +55,7 @@
     "@stacksjs/path": "^0.75.513",
     "@stacksjs/actions": "^0.75.513",
     "@stacksjs/ts-css": "0.3.24",
-    "@stacksjs/dtsx": "0.11.32"
+    "@stacksjs/dtsx": "0.11.33"
   },
   "workspaces": [
     "storage/framework",
