@@ -31,6 +31,10 @@ const snapshots = [
 // or one directory at a time, on a single local machine. Kept apart from the lab.
 const formatNs = (ns) => ns < 1e3 ? `${ns.toFixed(0)} ns` : ns < 1e6 ? `${(ns / 1e3).toFixed(2)} µs` : `${(ns / 1e6).toFixed(2)} ms`
 const engineMachine = engineReport.machine
+const engineLoads = (engineReport.loadAverage ?? []).flatMap(load => [load.start, load.end])
+const engineRunsLine = engineReport.runs > 1
+  ? `Each time is the median of ${engineReport.runs} full runs${engineLoads.length ? `; the 1-minute load average ranged ${Math.min(...engineLoads).toFixed(1)}–${Math.max(...engineLoads).toFixed(1)} during measurement` : ''}.`
+  : ''
 const engineMeasured = new Date(`${engineReport.date}T12:00:00Z`).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/Los_Angeles' })
 const engineCores = engineMachine.performanceCores && engineMachine.efficiencyCores ? `${engineMachine.cores}-core CPU (${engineMachine.performanceCores} performance + ${engineMachine.efficiencyCores} efficiency)` : `${engineMachine.cores}-core CPU`
 const engineTable = (section, title, detail, tools, columns) => {
@@ -114,7 +118,7 @@ const workload = state('annotated')
   <noscript><p class="notice">Download the raw results for every project size. Enable JavaScript to filter the tables.</p></noscript>
   <section id="engine" class="lab-group" aria-labelledby="engine-heading">
     <h2 id="engine-heading">Engine benchmarks.</h2>
-    <p>The lab above times whole published workflows on hosted runners. These numbers come from dtsx's own suite: the emitter itself, file by file, against oxc and TypeScript 7. Measured {{ engineMeasured }} on {{ engineMachine.cpu }} (<code>{{ engineMachine.model }}</code>), {{ engineCores }}, {{ engineMachine.memoryGB }} GB memory, {{ engineMachine.os }}, Bun {{ engineMachine.bun }}. dtsx is version {{ engineMachine.versions.dtsx }}. Each tool's output is verified before timing, and dtsx runs in its value-inferring mode. Times are means; lower is faster.</p>
+    <p>The lab above times whole published workflows on hosted runners. These numbers come from dtsx's own suite: the emitter itself, file by file, against oxc and TypeScript 7. Measured {{ engineMeasured }} on {{ engineMachine.cpu }} (<code>{{ engineMachine.model }}</code>), {{ engineCores }}, {{ engineMachine.memoryGB }} GB memory, {{ engineMachine.os }}, Bun {{ engineMachine.bun }}. Measured source: dtsx {{ engineMachine.versions.dtsx }} at <a href="https://github.com/stacksjs/dtsx/commit/{{ engineMachine.commit }}"><code>{{ engineMachine.commit }}</code></a>. Each tool's output is verified before timing, and dtsx runs in its value-inferring mode. Times are means; lower is faster. {{ engineRunsLine }}</p>
     @foreach(engineTables as table)
     <div class="table-scroll"><table class="results-table" id="{{ table.id }}"><caption>{{ table.title }}. {{ table.detail }}</caption><thead><tr><th scope="col">Tool</th>@foreach(table.columns as column)<th scope="col">{{ column }}</th>@endforeach</tr></thead><tbody>
     @foreach(table.rows as row)
