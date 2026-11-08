@@ -1,25 +1,36 @@
 <script server>
-import report from '~/public/benchmarks/results.json'
+import macReport from '~/public/benchmarks/results.json'
+import linuxReport from '~/public/benchmarks/results-linux.json'
+import macInferred from '~/public/benchmarks/results-inferred.json'
+import linuxInferred from '~/public/benchmarks/results-linux-inferred.json'
 const title = 'The declaration benchmark lab'
 const description = 'Compare dtsx with TypeScript, Oxc, SWC, zig-dtsx, tsdown, tsup, Rollup, API Extractor, and unplugin tools using reproducible benchmarks.'
 const pathname = '/benchmarks/'
-const measuredDate = new Date(report.measuredAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/Los_Angeles' })
-const platformLabel = report.machine.platform === 'darwin' ? 'macOS' : report.machine.platform
-const memoryGiB = Math.round(report.machine.memoryBytes / (1024 ** 3))
-const environmentNote = report.executionEnvironment?.kind === 'github-actions' ? 'This snapshot uses a hosted GitHub Actions runner. Virtualization and shared host activity can affect timings.' : 'This snapshot uses a developer machine with uncontrolled background activity.'
 const groups = [
   { id: 'project-emit', name: 'Per-module emission', detail: 'Declarations per source file. A semantic typecheck is not required.' },
   { id: 'checked-project', name: 'Checked compiler builds', detail: 'Includes semantic diagnostics. These compilers do extra work; compare within this group.' },
   { id: 'bundled-project', name: 'Standalone bundles', detail: 'One public declaration entry. Checking and JavaScript work vary by pipeline.' },
 ]
 const sizes = [1, 25, 100]
-const measured = report.results.filter(row => row.status === 'passed').length
-const fastestEmitter = report.results.filter(row => row.modules === 100 && row.group === 'project-emit' && row.status === 'passed').sort((a, b) => a.medianMs - b.medianMs)[0].name
-const fastestBundler = report.results.filter(row => row.modules === 100 && row.group === 'bundled-project' && row.status === 'passed').sort((a, b) => a.medianMs - b.medianMs)[0].name
+const snapshots = [
+  { id: 'macos-annotated', platform: 'macos', workload: 'annotated', workloadLabel: 'Explicit annotations', label: 'macOS', path: '/benchmarks/results.json', report: macReport },
+  { id: 'linux-annotated', platform: 'linux', workload: 'annotated', workloadLabel: 'Explicit annotations', label: 'Linux', path: '/benchmarks/results-linux.json', report: linuxReport },
+  { id: 'macos-inferred', platform: 'macos', workload: 'inferred', workloadLabel: 'Inferred APIs', label: 'macOS', path: '/benchmarks/results-inferred.json', report: macInferred },
+  { id: 'linux-inferred', platform: 'linux', workload: 'inferred', workloadLabel: 'Inferred APIs', label: 'Linux', path: '/benchmarks/results-linux-inferred.json', report: linuxInferred },
+].map(snapshot => ({
+  ...snapshot,
+  measuredDate: new Date(snapshot.report.measuredAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/Los_Angeles' }),
+  memoryGiB: Math.round(snapshot.report.machine.memoryBytes / (1024 ** 3)),
+  measured: snapshot.report.results.filter(row => row.status === 'passed').length,
+  fastestEmitter: snapshot.report.results.filter(row => row.modules === 100 && row.group === 'project-emit' && row.status === 'passed').sort((a, b) => a.medianMs - b.medianMs)[0]?.name ?? null,
+  fastestBundler: snapshot.report.results.filter(row => row.modules === 100 && row.group === 'bundled-project' && row.status === 'passed').sort((a, b) => a.medianMs - b.medianMs)[0]?.name ?? null,
+}))
 </script>
 <script client>
 const theme = useColorMode({ attribute: 'data-theme' })
 const size = state('100')
+const platform = state('macos')
+const workload = state('annotated')
 </script>
 @nolayout
 <!DOCTYPE html>
@@ -29,26 +40,41 @@ const size = state('100')
 @include('nav')
 <main id="main" class="document-main shell">
   <a class="back-link" href="/">← Back to dtsx</a>
-  <div class="document-heading"><h1>The numbers.<br><span>And how we got them.</span></h1><p>A fair comparison starts with a clear workload. Pick a project size and compare tools doing similar work.</p></div>
-  <div class="lab-meta"><div><strong>16</strong><span>tool configurations</span></div><div><strong>3</strong><span>project sizes</span></div><div><strong>9</strong><span>samples per case</span></div><div><strong>{{ measured }}/48</strong><span>qualified cases</span></div></div>
-  <div class="lab-controls"><label for="project-size">Library size</label><select id="project-size" x-model="size"><option value="1">1 module + entry</option><option value="25">25 modules + entry</option><option value="100">100 modules + entry</option></select><a class="text-link" href="/benchmarks/results.json" download>Download raw results ↓</a></div>
+  <div class="document-heading"><h1>The numbers.<br><span>And how we got them.</span></h1><p>Choose a platform, fixture, and library size. Compare tools doing similar work.</p></div>
+  <div class="lab-meta"><div><strong>16</strong><span>tool configurations</span></div><div><strong>3</strong><span>project sizes</span></div><div><strong>9</strong><span>samples per qualified case</span></div>@foreach(snapshots as snapshot)<div :if="platform() === '{{ snapshot.platform }}' && workload() === '{{ snapshot.workload }}'"><strong>{{ snapshot.measured }}/48</strong><span>qualified {{ snapshot.label }} cases</span></div>@endforeach</div>
+  <div class="lab-controls">
+    <div class="lab-control"><label for="benchmark-platform">Platform</label><select id="benchmark-platform" x-model="platform"><option value="macos">macOS</option><option value="linux">Linux</option></select></div>
+    <div class="lab-control"><label for="benchmark-workload">Fixture</label><select id="benchmark-workload" x-model="workload"><option value="annotated">Explicit annotations</option><option value="inferred">Inferred APIs</option></select></div>
+    <div class="lab-control"><label for="project-size">Library size</label><select id="project-size" x-model="size"><option value="1">1 module + entry</option><option value="25">25 modules + entry</option><option value="100">100 modules + entry</option></select></div>
+    @foreach(snapshots as snapshot)<a :if="platform() === '{{ snapshot.platform }}' && workload() === '{{ snapshot.workload }}'" class="text-link" href="{{ snapshot.path }}" aria-label="Download {{ snapshot.label }} {{ snapshot.workloadLabel }} raw results" download>Download results ↓</a>@endforeach
+  </div>
+  @foreach(snapshots as snapshot)
+  <div :if="platform() === '{{ snapshot.platform }}' && workload() === '{{ snapshot.workload }}'" data-benchmark-platform="{{ snapshot.platform }}" data-benchmark-workload="{{ snapshot.workload }}">
   @foreach(groups as group)
-  <section class="lab-group" aria-labelledby="group-{{ group.id }}"><h2 id="group-{{ group.id }}">{{ group.name }}</h2><p>{{ group.detail }}</p>
+  <section class="lab-group" aria-labelledby="{{ snapshot.id }}-group-{{ group.id }}"><h2 id="{{ snapshot.id }}-group-{{ group.id }}">{{ group.name }}</h2><p>{{ group.detail }}</p>
     @foreach(sizes as count)
-    <div :if="size() === '{{ count }}'" class="table-scroll"><table class="results-table"><caption>{{ count }} {{ count === 1 ? 'module' : 'modules' }} + one entrypoint · milliseconds · lower is faster</caption><thead><tr><th scope="col">Tool / version</th><th scope="col">Median</th><th scope="col">Min - max</th><th scope="col">Samples</th></tr></thead><tbody>
-    @foreach(report.results.filter(row => row.group === group.id && row.modules === count).sort((a, b) => (a.medianMs ?? Infinity) - (b.medianMs ?? Infinity)) as row)
-    <tr class="{{ row.id.startsWith('dtsx') ? 'highlight-row' : '' }}"><th scope="row">{{ row.name }}<small>{{ row.version }}</small></th>@if(row.status === 'passed')<td class="number">{{ row.medianMs.toFixed(1) }}</td><td class="number range">{{ row.minMs.toFixed(1) }} - {{ row.maxMs.toFixed(1) }}</td><td>{{ row.samplesMs.length }} / 9</td>@else<td colspan="3" class="unavailable">Failed qualification; see the raw results for details</td>@endif</tr>
+    <div :if="size() === '{{ count }}'" class="table-scroll"><table class="results-table"><caption>{{ snapshot.label }} · {{ snapshot.workloadLabel }} · {{ count }} {{ count === 1 ? 'module' : 'modules' }} + one entrypoint · milliseconds · lower is faster</caption><thead><tr><th scope="col">Tool / version</th><th scope="col">Median</th><th scope="col">Min - max</th><th scope="col">Samples</th></tr></thead><tbody>
+    @foreach(snapshot.report.results.filter(row => row.group === group.id && row.modules === count).sort((a, b) => (a.medianMs ?? Infinity) - (b.medianMs ?? Infinity)) as row)
+    <tr class="{{ row.id.startsWith('dtsx') ? 'highlight-row' : '' }}"><th scope="row">{{ row.name }}<small>{{ row.version }}</small></th>@if(row.status === 'passed')<td class="number">{{ row.medianMs.toFixed(1) }}</td><td class="number range">{{ row.minMs.toFixed(1) }} - {{ row.maxMs.toFixed(1) }}</td><td>{{ row.samplesMs.length }} / 9</td>@else<td colspan="3" class="unavailable">Not qualified for this fixture. <a href="{{ snapshot.path }}">Inspect the {{ row.failureStage }} diagnostic ↗</a></td>@endif</tr>
     @endforeach
     </tbody></table></div>
     @endforeach
   </section>
   @endforeach
+  <div class="notice"><h3>{{ snapshot.label }}. One machine. A defined workload.</h3><p>Measured {{ snapshot.measuredDate }} on {{ snapshot.report.machine.cpu }}, {{ snapshot.label }} {{ snapshot.report.machine.arch }}, {{ snapshot.report.machine.cores }} CPU cores, {{ snapshot.memoryGiB }} GiB memory, {{ snapshot.report.runtime }}. This snapshot uses a hosted GitHub Actions runner. Virtualization and shared host activity can affect timings. Ranges and raw samples are visible.</p></div>
+  <div class="benchmark-caveat">
+    <p>{{ snapshot.label }} · {{ snapshot.workloadLabel }} · 100 modules.</p>
+    @if(snapshot.fastestEmitter)<p>{{ snapshot.fastestEmitter }} has the lowest per-module emission median among qualified configurations.</p>@else<p>No per-module emitter qualified for this fixture.</p>@endif
+    @if(snapshot.fastestBundler)<p>{{ snapshot.fastestBundler }} has the lowest standalone bundle median among qualified configurations.</p>@else<p>No standalone bundle configuration qualified for this fixture.</p>@endif
+    <p>Close medians with overlapping ranges should be treated as similar performance. Compare within the selected platform, fixture and output group.</p>
+  </div>
+  </div>
+  @endforeach
   <noscript><p class="notice">Download the raw results for every project size. Enable JavaScript to filter the tables.</p></noscript>
-  <section id="methodology" class="methodology"><h2>What these results measure.</h2><div class="method-grid"><article><h3>Same source. Fresh process.</h3><p>Each tool receives the same synthetic, annotated library. Every sample starts in a new process and a fresh output directory. Filesystem caches are warm. Incremental and result caches are not reused.</p></article><article><h3>Useful output comes first.</h3><p>Every sample must exit successfully, emit declarations, and pass a strict consumer covering every module. Two negative assignments must produce exactly TS2322. Bundled declarations are tested in a standalone directory.</p></article><article><h3>The whole command counts.</h3><p>Wall time includes startup, package loading, source reads, emission, writes, and disposal. Cleanup and correctness checks happen outside timing. Two warmups precede nine samples, with tool order rotated each round.</p></article><article><h3>Different tools do different work.</h3><p>TypeScript compilers perform semantic checks. API Extractor and Rollup include prerequisite tsc emission. Vite runs its JavaScript pipeline. tsup and tsdown use declaration-only mode. The adapter source shows every setting.</p></article></div>
-  <div class="notice"><h3>One machine. A defined workload.</h3><p>Measured {{ measuredDate }} on {{ report.machine.cpu }}, {{ platformLabel }} {{ report.machine.arch }}, {{ report.machine.cores }} CPU cores, {{ memoryGiB }} GiB memory, {{ report.runtime }}. {{ environmentNote }} Ranges and raw samples are visible.</p><p>The fixtures exercise annotated interfaces, re-exports, generics, private class fields, mapped types, and enums. They exclude external dependencies, JSX, watch mode, declaration maps, and incremental rebuilds. The checks qualify this API; they do not prove correctness for arbitrary TypeScript.</p><p>Zig uses the official <a href="{{ report.nativeZig.url }}">zig-dtsx {{ report.nativeZig.version }} release</a>, with its matching Bun FFI binding and platform library. The setup verifies pinned SHA-256 checksums before measuring. The source commit and artifact checksums are included in the raw results. No development build is substituted.</p></div>
-  <p>For the 100-module workload, {{ fastestEmitter }} has the lowest per-module emission median and {{ fastestBundler }} has the lowest standalone bundle median among these configurations. Close medians with overlapping ranges should be treated as similar performance. Use the workload that matches your project, and rerun before choosing a tool on performance alone.</p>
-  <p>The separate Ubuntu run could not load the official Linux Zig library. Its raw snapshot records those failed qualifications with no Zig timings. The macOS comparison above includes Zig at every size.</p>
-  <div class="document-links"><a href="https://github.com/stacksjs/dtsx.org/tree/main/benchmarks">Inspect and rerun the suite ↗</a><a href="/benchmarks/methodology.md" download>Download the methodology ↓</a><a href="/benchmarks/results-linux.json" download>Download the Linux qualification snapshot ↓</a><a href="https://github.com/stacksjs/dtsx.org/actions/workflows/benchmarks.yml">Run the macOS / Linux workflow ↗</a></div>
+  <section id="workloads" class="notice"><h2>Two ways to write your API.</h2><p>The <strong>Explicit annotations</strong> fixture covers authored public types, generics, private fields, mapped types and enums. The <strong>Inferred APIs</strong> fixture omits type annotations and type assertions. It tests inferred defaults, returns, arrow functions, class members, objects, arrays and imported function results.</p><p>Every configuration receives the same source in the selected fixture. Emission failures and incorrect inferred types remain visible, including failures from dtsx and Zig. Only fully qualified configurations receive medians. Raw results include the diagnostics.</p></section>
+  <section id="methodology" class="methodology"><h2>What these results measure.</h2><div class="method-grid"><article><h3>Same source. Fresh process.</h3><p>Each tool receives the same source for the selected fixture. Every sample starts in a new process and a fresh output directory. Filesystem caches are warm. Incremental and result caches are not reused.</p></article><article><h3>Useful output comes first.</h3><p>Every sample must exit successfully, emit declarations, and pass a strict consumer covering every module. API positions must retain their types without falling back to any. Inferred types must also preserve expected widening. Two negative assignments must produce exactly TS2322. Bundled declarations are tested in a standalone directory.</p></article><article><h3>The whole command counts.</h3><p>Wall time includes startup, package loading, source reads, emission, writes, and disposal. Cleanup and correctness checks happen outside timing. Two warmups precede nine samples, with tool order rotated each round.</p></article><article><h3>Different tools do different work.</h3><p>TypeScript compilers perform semantic checks. API Extractor and Rollup include prerequisite tsc emission. Vite runs its JavaScript pipeline. tsup and tsdown use declaration-only mode. The adapter source shows every setting.</p></article></div>
+  <div class="notice"><h3>Separate platforms. The same workload.</h3><p>Every configuration is rerun on each platform. macOS and Linux timings stay separate, as do annotated and inferred APIs. A failed configuration is never ranked as a fast result. The fixtures exclude external dependencies, JSX, watch mode, declaration maps, and incremental rebuilds. The checks qualify this API; they do not prove correctness for arbitrary TypeScript.</p><p>Zig uses the official <a href="{{ macReport.nativeZig.url }}">zig-dtsx {{ macReport.nativeZig.version }} release</a>, with its matching Bun FFI binding and platform library. Linux uses the corrected GNU libc library, built from the unchanged release source with its original compiler and ReleaseFast settings. The setup verifies pinned SHA-256 checksums before measuring. The source commit and artifact checksums are included in each raw snapshot. <a href="https://github.com/stacksjs/dtsx/releases/download/v0.11.31/linux-gnu-manifest.json">Inspect the Linux repair manifest ↗</a></p></div>
+  <div class="document-links"><a href="https://github.com/stacksjs/dtsx.org/tree/main/benchmarks">Inspect and rerun the suite ↗</a><a href="/benchmarks/methodology.md" download>Download the methodology ↓</a><a href="https://github.com/stacksjs/dtsx.org/actions/workflows/benchmarks.yml">Run the macOS / Linux workflow ↗</a></div>
   </section>
 </main>
 @include('footer')

@@ -104,5 +104,7 @@ jobs:
         run: |
           curl --fail --retry 6 --retry-delay 10 --retry-all-errors https://dtsx.org/ -o /tmp/home.html
           grep -q 'TypeScript declarations' /tmp/home.html
-          curl --fail --retry 3 https://dtsx.org/benchmarks/results.json -o /tmp/benchmarks.json
-          bun -e "const r=await Bun.file('/tmp/benchmarks.json').json();if(r.smoke||r.results.length!==48||r.results.some(row=>row.status!=='passed'))throw new Error('Missing full benchmark evidence')"
+          for snapshot in results.json results-linux.json results-inferred.json results-linux-inferred.json; do
+            curl --fail --retry 3 --retry-delay 3 "https://dtsx.org/benchmarks/$snapshot" -o "/tmp/$snapshot"
+          done
+          bun -e "for(const name of ['results.json','results-linux.json','results-inferred.json','results-linux-inferred.json']){if(await Bun.file('/tmp/'+name).text()!==await Bun.file('public/benchmarks/'+name).text())throw new Error('Deployed benchmark evidence differs: '+name)}"

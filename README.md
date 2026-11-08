@@ -17,11 +17,11 @@ bun run test
 
 ## Benchmarks
 
-The benchmark toolchain has its own manifest and lockfile under [`benchmarks`](benchmarks/README.md). Install there and run `bun setup-zig.ts` before running it. The Zig binding and platform library come from a checksum-pinned official release. The site reads its macOS snapshot from `public/benchmarks/results.json`; Linux results are published separately in `public/benchmarks/results-linux.json`. The manual **Benchmark lab** GitHub workflow runs the same suite on both platforms and saves artifacts for review. It does not automatically replace the published snapshots.
+The benchmark toolchain has its own manifest and lockfile under [`benchmarks`](benchmarks/README.md). Install there and run `bun setup-zig.ts` first. The Zig binding and platform library come from checksum-pinned official release assets, including corrected GNU libc libraries for Linux. The website exposes separate macOS and Linux snapshots for explicitly annotated and unannotated inference workloads. The manual **Benchmark lab** GitHub workflow reruns every configuration in each selected workload and saves artifacts for review. It does not automatically replace the published snapshots.
 
 ## Deployment
 
-Pushes to `main` run lint, typechecking, the native Stacks view build, artifact checks, and native Zig qualification on Apple silicon and Intel macOS runners. After those pass, the same workflow calls `./buddy deploy --prod --yes`. Deploys are serialized and use the exact checked commit. Pull requests never receive production credentials or deploy. The separate Benchmark lab workflow retains Linux qualification failures rather than treating an unavailable native binary as a valid measurement.
+Pushes to `main` run lint, typechecking, the native Stacks view build, artifact checks, and native Zig qualification on Linux x64/arm64 and Apple silicon/Intel macOS runners. After those pass, the same workflow calls `./buddy deploy --prod --yes`. Deploys are serialized and use the exact checked commit. Pull requests never receive production credentials or deploy. Inferred-output failures remain explicit in the benchmark evidence and never receive accepted timings.
 
 `config/cloud.ts` declares an isolated server-static tenant on the existing Stacks host, plus a permanent www redirect. Stacks handles packaging, release activation, reverse-proxy configuration, and TLS. No frontend app service or database is needed.
 

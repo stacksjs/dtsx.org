@@ -5,27 +5,52 @@ Run from this directory with Bun 1.4.4:
 ```sh
 bun install --frozen-lockfile
 bun setup-zig.ts
-bun run.ts --smoke
-bun run.ts
+bun test fixtures.test.ts
+bun run.ts --smoke --workload=annotated --require-all
+bun run.ts --workload=annotated --require-all
+bun run.ts --workload=inferred --require-baselines
 ```
 
-The complete run writes `public/benchmarks/results.json`. The smoke run qualifies adapters and never replaces published timings. Dependencies are exact versions with a separate lockfile so website updates cannot silently change the benchmark tools.
+The manual **Benchmark lab** workflow runs both fixture workloads on macOS and Linux. Each job runs all 16 configurations sequentially on one runner. The four snapshots remain separate:
 
-Each sample starts a new process with a fresh output directory. Timings include imports, source reads, generation, writes, and tool disposal. Inputs and strict consumer checks are outside timing. Filesystem caches are warm, but tool result caches do not survive between samples. Runs are sequential, with tool order rotated each round, two warmups, and nine measured samples. Report medians and ranges, not the single fastest run.
+| Platform | Fixture workload | Published file |
+|---|---|---|
+| macOS | Explicit annotations | `public/benchmarks/results.json` |
+| Linux | Explicit annotations | `public/benchmarks/results-linux.json` |
+| macOS | Inferred APIs | `public/benchmarks/results-inferred.json` |
+| Linux | Inferred APIs | `public/benchmarks/results-linux-inferred.json` |
 
-Three workloads stay separate: per-module emission, compiler emission with semantic checks, and a standalone declaration bundle. A compiler does more work than an unchecked emitter. Bundlers also differ in typechecking and JavaScript emission: Vite runs its JS pipeline, tsup uses declaration-only mode, tsdown runs with `emitDtsOnly`, and Rollup/API Extractor include the prerequisite tsc emission. These are useful workflow comparisons, not equivalent compiler internals.
+Local runs choose the filename from the operating system and workload. Smoke runs write ignored `smoke-<workload>.json` files and never replace published timings. Dependencies are exact versions with a separate lockfile. The snapshots record hashes of the harness, adapters, fixture generator, lockfile and each authored fixture, plus the workflow run and source commit.
 
-Every sample must exit successfully, emit declarations, pass a strict positive consumer covering every module, and reject two negative assignments with exactly TS2322. Bundles are copied into a standalone directory before validation, preventing unresolved internal references from passing accidentally. These controls catch missing exports and permissive `any` for the exercised API. They do not establish equivalence for all TypeScript.
+Each sample starts a new process with a fresh output directory. Timings include imports, source reads, generation, writes and tool disposal. Inputs and strict consumer checks are outside timing. Filesystem caches are warm, but incremental and result caches do not survive between samples. Runs are sequential, with tool order rotated each round, two warmups and nine measured samples. Medians and ranges are published, not just the fastest run.
 
-Fixtures are deterministic synthetic libraries with annotated interfaces, re-exports, generics, class private fields, mapped types, and enums. The sizes are 1, 25, and 100 modules plus an entrypoint. They exclude JSX, third-party dependencies, watch mode, incremental rebuilds, and maps. Published results are a single-runner snapshot; rerun for your project and hardware. The full macOS rerun is the website default, and hosted Linux results are kept separately. Timings from different operating systems are never combined. Hardware, runtime, workflow run, and source commit are recorded in each result file. Virtualization and shared host activity can affect timing. A disk-space preflight aborts a resource-constrained run instead of treating failed writes as tool performance.
+Three output groups stay separate: per-module emission, compiler emission with semantic checks, and a standalone declaration bundle. A compiler does more work than an unchecked emitter. Bundlers also differ in typechecking and JavaScript emission: Vite runs its JS pipeline, tsup uses declaration-only mode, tsdown uses `emitDtsOnly`, and Rollup/API Extractor include prerequisite tsc emission. These are workflow comparisons, not equivalent compiler internals.
 
-Zig uses the supported `zig-dtsx` v0.11.31 release from [GitHub Releases](https://github.com/stacksjs/dtsx/releases/tag/v0.11.31), not the obsolete scoped npm package. `zig-release.json` pins release commit `78404ebf3762331a5d3204ed5d31731de5ad75c2`, the matching official Bun FFI binding, and each platform's shared-library archive by SHA-256. `bun setup-zig.ts` verifies and installs those artifacts under the ignored `.native` directory. It requires Bun and tar, not a Zig compiler. The lock includes macOS arm64/x64 and Linux arm64/x64 artifacts; each report records the measured platform and its qualification status. All tools use released artifacts.
+## Two fixture workloads
 
-Every run verifies the installed binding and library before creating fixtures. Downloads, extraction, and checksum verification happen outside timing. Each timed Zig worker loads the native library, emits every file in isolated-declaration mode, and writes its declarations just like the other per-module adapters. The raw results retain the release commit, platform, asset URL, archive checksum, binding checksum, and extracted library checksum.
+**Explicit annotations** use interfaces, re-exports, generic classes, private fields, mapped types and enums. Public types are authored explicitly, and `isolatedDeclarations` is enabled.
 
-The earlier snapshot excluded Zig because it used an obsolete npm distribution. The current dataset replaces that snapshot with a full rerun of every tool; no old timings are spliced into the new comparison. The release artifacts also load on macOS without depending on a developer's local build or toolchain selection.
+**Inferred APIs** contain no type annotations or type assertions. They exercise inferred parameter defaults, function returns, arrow functions, class members, mutable object properties, arrays and exported results of imported functions. The AST test checks that annotations have not slipped into this workload. `isolatedDeclarations` is disabled. The adapters request inference where available: dtsx receives `isolatedDeclarations: false`, and Zig uses its source-inference mode. Isolated-only adapters are still attempted through their supported declaration APIs. They receive the same unannotated source, with no annotated replacement.
 
-CI gates deployment on the released Zig library passing the strict positive/negative consumer on both Apple silicon and Intel macOS runners. `bun run.ts --smoke --tools=zig --require-all` runs that qualification. `--require-all` returns failure after saving evidence if any selected tool fails, so unavailable binaries cannot silently pass CI. The separate Linux run records a native-library loading failure for the official Linux release on the hosted Ubuntu runner. Its Zig rows are failed qualifications with no accepted timings. This does not exclude Zig from the complete macOS comparison shown on the website.
+Both workloads use 1, 25 and 100 modules plus an entrypoint. They exclude JSX, third-party dependencies, watch mode, incremental rebuilds and declaration maps. Changing the fixture also changes the work a tool can perform, so compare within the selected platform, fixture and output group.
+
+## Correctness before timing claims
+
+Every accepted sample must exit successfully, emit declarations, pass a strict TypeScript 6 positive consumer covering every module and reject two negative assignments with exactly TS2322. `skipLibCheck` is false. Positive controls reject `any` in exercised public API positions. The inference controls also check expected type widening, including mutable settings, arrays, imported values and returned objects. A regression test verifies that the consumer accepts compiler output and rejects mutations to `any` or overly narrow literal types. Bundles are copied into a standalone directory before checking, so unresolved internal references cannot pass accidentally.
+
+A failed configuration stays in the results with its emission or consumer diagnostic. It receives no median and no accepted timing samples. It is not ranked. This includes dtsx and Zig if their emitted inferred API does not pass. A failure describes this configuration against this fixture; it does not prove a tool cannot handle any unannotated source. Neither workload establishes correctness for arbitrary TypeScript.
+
+`--require-all` requires every selected configuration to qualify and is used for the annotated suite. The inference suite uses `--require-baselines`: both checked TypeScript compilers must qualify at every size, while other failures remain visible as results. Unsupported or incorrect output is never counted as a fast result. All successful full-run rows contain nine samples; failed or partial configurations retain no accepted performance claim.
+
+## Native Zig release provenance
+
+Zig uses `zig-dtsx` v0.11.31 from [GitHub Releases](https://github.com/stacksjs/dtsx/releases/tag/v0.11.31). `zig-release.json` pins release commit `78404ebf3762331a5d3204ed5d31731de5ad75c2`, its matching Bun FFI binding and each platform archive by SHA-256. `bun setup-zig.ts` installs under ignored `.native`, verifies hashes and probes the actual system loader before measurement. No Zig compiler is needed on a benchmark runner. Downloads, extraction, verification and qualification tests happen outside timing.
+
+The original Linux shared libraries used the default musl target and requested `libc.so`. On a glibc host that path is a linker script, causing `invalid ELF header`. The additional `*-linux-*-gnu.tar.gz` release assets correct the shared-library target to GNU libc 2.17. They use the unchanged tagged emitter, original Zig `0.17.0-dev.1282+c0f9b51d8` compiler and ReleaseFast settings. Both x64 and arm64 assets passed packaged FFI loading and strict consumer checks on their matching Linux architectures before publication. The [repair manifest](https://github.com/stacksjs/dtsx/releases/download/v0.11.31/linux-gnu-manifest.json) records source, compiler, targets, qualification workflow and hashes. Original assets and checksums remain unchanged. The website lock pins the additional assets; raw Linux results include the target, compiler and optimization level.
+
+Each timed Zig worker loads the released library, reads every file, emits in the selected annotated or inference mode and writes declarations. No development emitter build is substituted. Both platforms and both workloads are rerun across every configuration; previous timings are not spliced into the new comparison.
+
+CI gates deployment on annotated native qualification on Linux x64/arm64 and Apple silicon/Intel macOS. The website checks all four full snapshots, their fixture identities, baseline consumers, accepted sample counts and published page values. Each snapshot records its actual hardware and runtime. Virtualization and shared host activity can affect timings. A disk-space preflight aborts resource-constrained runs.
 
 Primary documentation checked November 7, 2026:
 

@@ -1,34 +1,118 @@
 import { expect, test } from 'bun:test'
+import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
+interface BenchmarkRow {
+  id: string
+  name: string
+  group: string
+  version: string
+  modules: number
+  sourceFiles: number
+  fixtureSha256: string
+  status: 'passed' | 'failed'
+  samplesMs: number[]
+  medianMs: number | null
+  minMs: number | null
+  maxMs: number | null
+  outputSha256?: string
+  error?: string
+  failureStage?: string
+}
+interface BenchmarkReport {
+  schemaVersion: number
+  smoke: boolean
+  workload: string
+  runtime: string
+  benchmarkDefinition: Record<string, string>
+  machine: { platform: string; arch: string }
+  executionEnvironment: { kind: string; commit: string; runId: string }
+  methodology: { iterations: number; warmups: number }
+  nativeZig: { version: string; commit: string; platform: string; archiveSha256: string; bindingSha256: string; librarySha256: string; target?: string; compiler?: string; optimize?: string }
+  results: BenchmarkRow[]
+}
 const root = join(import.meta.dir, '..')
-const report = await Bun.file(join(root, 'public/benchmarks/results.json')).json()
+const specifications = [
+  { file: 'results.json', platform: 'darwin', workload: 'annotated' },
+  { file: 'results-linux.json', platform: 'linux', workload: 'annotated' },
+  { file: 'results-inferred.json', platform: 'darwin', workload: 'inferred' },
+  { file: 'results-linux-inferred.json', platform: 'linux', workload: 'inferred' },
+]
+const snapshots = await Promise.all(specifications.map(async specification => ({ ...specification, report: await Bun.file(join(root, 'public/benchmarks', specification.file)).json() as BenchmarkReport })))
+const report = snapshots[0].report
 const zigRelease = await Bun.file(join(root, 'benchmarks/zig-release.json')).json()
+const configurationIds = ['dtsx', 'zig', 'oxc', 'swc', 'ts-transpile', 'tsc', 'tsgo', 'dtsx-bundle', 'tsdown-oxc', 'tsdown-tsc', 'tsup', 'rollup-dts', 'api-extractor', 'dts-bundle-generator', 'unplugin-dts', 'unplugin-isolated']
+const expectedCases = configurationIds.flatMap(id => [1, 25, 100].map(count => `${id}:${count}`)).sort()
+const frozenDefinition = Object.fromEntries(await Promise.all(['run.ts', 'worker.ts', 'fixtures.ts', 'bun.lock'].map(async file => [file, createHash('sha256').update(await readFile(join(root, 'benchmarks', file))).digest('hex')])))
 
-test('published benchmark evidence contains complete, qualified measured samples', () => {
-  expect(report.smoke).toBe(false)
-  expect(report.results).toHaveLength(48)
-  expect(report.methodology.iterations).toBe(9)
-  expect(report.nativeZig.version).toBe(zigRelease.version)
-  expect(report.nativeZig.commit).toBe(zigRelease.commit)
-  expect(report.nativeZig.archiveSha256).toBe(zigRelease.libraries[report.nativeZig.platform].sha256)
-  expect(report.nativeZig.bindingSha256).toBe(zigRelease.binding.sha256)
-  expect(report.nativeZig.librarySha256).toMatch(/^[a-f\d]{64}$/)
-  const zigRows = report.results.filter((row: { id: string }) => row.id === 'zig')
-  expect(zigRows).toHaveLength(3)
-  expect(zigRows.map((row: { modules: number }) => row.modules).sort((a: number, b: number) => a - b)).toEqual([1, 25, 100])
-  for (const row of zigRows) expect(row.version).toBe(zigRelease.version)
-  for (const row of report.results) {
-    expect(row.version).not.toBe('see lockfile')
-    expect(row.status).toBe('passed')
-    if (row.status === 'passed') {
-      expect(row.samplesMs).toHaveLength(9)
-      expect(row.samplesMs.every((time: number) => Number.isFinite(time) && time > 0)).toBe(true)
-      const ordered = [...row.samplesMs].sort((a, b) => a - b)
-      expect(row.medianMs).toBe(ordered[4])
-      expect(row.outputSha256).toMatch(/^[a-f\d]{64}$/)
+test('all four full snapshots use the frozen harness, locked native artifacts and complete case matrix', () => {
+  for (const snapshot of snapshots) {
+    const data = snapshot.report
+    expect(data.schemaVersion).toBe(3)
+    expect(data.smoke).toBe(false)
+    expect(data.workload).toBe(snapshot.workload)
+    expect(data.machine.platform).toBe(snapshot.platform)
+    expect(data.runtime).toBe('Bun 1.4.4')
+    expect(data.benchmarkDefinition).toEqual(frozenDefinition)
+    expect(data.executionEnvironment.kind).toBe('github-actions')
+    expect(data.executionEnvironment.commit).toMatch(/^[a-f\d]{40}$/)
+    expect(data.executionEnvironment.runId).toMatch(/^\d+$/)
+    expect(data.methodology.iterations).toBe(9)
+    expect(data.methodology.warmups).toBe(2)
+    expect(data.results.map(row => `${row.id}:${row.modules}`).sort()).toEqual(expectedCases)
+    const native = data.nativeZig
+    const artifact = zigRelease.libraries[native.platform]
+    expect(native.version).toBe(zigRelease.version)
+    expect(native.commit).toBe(zigRelease.commit)
+    expect(native.archiveSha256).toBe(artifact.sha256)
+    expect(native.bindingSha256).toBe(zigRelease.binding.sha256)
+    expect(native.librarySha256).toMatch(/^[a-f\d]{64}$/)
+    if (snapshot.platform === 'linux') {
+      expect(native.target).toBe(artifact.target)
+      expect(native.compiler).toBe(artifact.compiler)
+      expect(native.optimize).toBe('ReleaseFast')
+      expect(native.librarySha256).toBe(artifact.librarySha256)
     }
+    for (const row of data.results) {
+      expect(row.version).not.toBe('see lockfile')
+      expect(row.sourceFiles).toBe(row.modules + 1)
+      expect(row.fixtureSha256).toMatch(/^[a-f\d]{64}$/)
+      if (row.id === 'zig') expect(row.version).toBe(zigRelease.version)
+      if (snapshot.workload === 'annotated' || row.id === 'tsc' || row.id === 'tsgo') expect(row.status).toBe('passed')
+      if (row.status === 'passed') {
+        expect(row.samplesMs).toHaveLength(9)
+        expect(row.samplesMs.every(time => Number.isFinite(time) && time > 0)).toBe(true)
+        const sorted = [...row.samplesMs].sort((a, b) => a - b)
+        expect(row.medianMs).toBe(sorted[4])
+        expect(row.minMs).toBe(sorted[0])
+        expect(row.maxMs).toBe(sorted[sorted.length - 1])
+        expect(row.outputSha256).toMatch(/^[a-f\d]{64}$/)
+      }
+      else {
+        expect(row.status).toBe('failed')
+        expect(row.samplesMs).toHaveLength(0)
+        expect(row.medianMs).toBeNull()
+        expect(row.minMs).toBeNull()
+        expect(row.maxMs).toBeNull()
+        expect((row.error ?? '').length).toBeGreaterThan(0)
+        expect(['emission', 'consumer qualification']).toContain(row.failureStage ?? '')
+      }
+    }
+  }
+})
+
+test('every configuration receives identical fixture inputs on each platform', () => {
+  for (const workload of ['annotated', 'inferred']) {
+    const matching = snapshots.filter(snapshot => snapshot.workload === workload)
+    for (const count of [1, 25, 100]) {
+      const rows = matching.flatMap(snapshot => snapshot.report.results.filter(row => row.modules === count))
+      expect(new Set(rows.map(row => row.fixtureSha256)).size).toBe(1)
+    }
+    expect(matching[0].report.results.map(row => [row.id, row.modules, row.version, row.group])).toEqual(matching[1].report.results.map(row => [row.id, row.modules, row.version, row.group]))
+  }
+  for (const count of [1, 25, 100]) {
+    expect(snapshots[0].report.results.find(row => row.modules === count)?.fixtureSha256).not.toBe(snapshots[2].report.results.find(row => row.modules === count)?.fixtureSha256)
   }
 })
 
@@ -56,33 +140,24 @@ test('built pages retain content, canonical URLs, and resolvable local assets an
 
 test('the homepage publishes the actual full-run bundled medians', async () => {
   const html = await Bun.file(join(root, 'dist/index.html')).text()
-  for (const row of report.results.filter((row: { modules: number, group: string }) => row.modules === 100 && row.group === 'bundled-project')) {
+  for (const row of report.results.filter(row => row.modules === 100 && row.group === 'bundled-project')) {
     expect(html).toContain(row.name)
-    expect(html).toContain(row.medianMs.toFixed(1))
+    expect(html).toContain(row.medianMs!.toFixed(1))
   }
-  const winner = report.results.filter((row: { modules: number, group: string }) => row.modules === 100 && row.group === 'project-emit').sort((a: { medianMs: number }, b: { medianMs: number }) => a.medianMs - b.medianMs)[0]
+  const winner = report.results.filter(row => row.modules === 100 && row.group === 'project-emit').sort((a, b) => a.medianMs! - b.medianMs!)[0]
   expect(html).toContain(`${winner.name} has the lowest median`)
 })
 
-test('macOS and Linux snapshots stay separate and use the same qualified workload', async () => {
-  const linux = await Bun.file(join(root, 'public/benchmarks/results-linux.json')).json()
-  expect(report.machine.platform).toBe('darwin')
-  expect(linux.machine.platform).toBe('linux')
-  expect(report.executionEnvironment.kind).toBe('github-actions')
-  expect(linux.executionEnvironment.kind).toBe('github-actions')
-  expect(linux.executionEnvironment.commit).toBe(report.executionEnvironment.commit)
-  expect(linux.nativeZig.commit).toBe(report.nativeZig.commit)
-  expect(linux.results).toHaveLength(48)
-  for (const row of linux.results) {
-    if (row.id === 'zig') {
-      expect(row.status).toBe('failed')
-      expect(row.samplesMs).toHaveLength(0)
-      expect(row.medianMs).toBeNull()
-      expect(row.error).toContain('Pinned Zig library could not be loaded')
-    }
-    else {
-      expect(row.status).toBe('passed')
-      expect(row.samplesMs).toHaveLength(9)
-    }
+
+test('the lab exposes both platforms and both fixture workloads with their raw evidence', async () => {
+  const html = await Bun.file(join(root, 'dist/benchmarks/index.html')).text()
+  expect(html).toContain('id="benchmark-platform"')
+  expect(html).toContain('id="benchmark-workload"')
+  expect(html).toContain('Inferred APIs')
+  const emptyEmitterGroup = snapshots.some(snapshot => !snapshot.report.results.some(row => row.group === 'project-emit' && row.status === 'passed'))
+  expect(html.includes('No per-module emitter qualified for this fixture.')).toBe(emptyEmitterGroup)
+  for (const snapshot of snapshots) {
+    expect(html).toContain(`/benchmarks/${snapshot.file}`)
+    for (const row of snapshot.report.results.filter(row => row.status === 'passed')) expect(html).toContain(row.medianMs!.toFixed(1))
   }
 })
