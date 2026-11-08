@@ -13,14 +13,22 @@
   },
   "libraries": {
     "linux-x64": {
-      "asset": "zig-dtsx-lib-linux-x64.tar.gz",
-      "sha256": "0bfa29ac6236294ce6272b77457936a366e84c97062f8880cfd2c5bb9b7cc5e6",
-      "file": "libzig-dtsx.so"
+      "asset": "zig-dtsx-lib-linux-x64-gnu.tar.gz",
+      "sha256": "0fdf6ae1a232f0b6df03b603b3deb4e31b656883564cdfd4c76a0a72018477dc",
+      "file": "libzig-dtsx.so",
+      "librarySha256": "0515598df10db0e700c5e1e7680ddbf148dc7092dea2d4957f11abc441b57bd1",
+      "target": "x86_64-linux-gnu.2.17",
+      "compiler": "0.17.0-dev.1282+c0f9b51d8",
+      "optimize": "ReleaseFast"
     },
     "linux-arm64": {
-      "asset": "zig-dtsx-lib-linux-arm64.tar.gz",
-      "sha256": "c9f48c8fa6665cc527b9ba0b43ff9b1328eb1838e165350b98d9b3d82ec7803d",
-      "file": "libzig-dtsx.so"
+      "asset": "zig-dtsx-lib-linux-arm64-gnu.tar.gz",
+      "sha256": "995cc9031f45a2a2100c67a0fc531559fab5c13e1195da537a772cbcb7942634",
+      "file": "libzig-dtsx.so",
+      "librarySha256": "1e84643c8e35117885f2dd7b33aa351329070b5d56db02bae4e220a0069a1b95",
+      "target": "aarch64-linux-gnu.2.17",
+      "compiler": "0.17.0-dev.1282+c0f9b51d8",
+      "optimize": "ReleaseFast"
     },
     "darwin-x64": {
       "asset": "zig-dtsx-lib-darwin-x64.tar.gz",
@@ -42,5 +50,11 @@
       "sha256": "dd3f1c8eaf66165a9de3c0cb38f1416a6b2f92c4cd13929196e7c51c9cb5f265",
       "file": "libzig-dtsx.so"
     }
+  },
+  "linuxRepair": {
+    "manifest": "https://github.com/stacksjs/dtsx/releases/download/v0.11.31/linux-gnu-manifest.json",
+    "sha256": "5175e6bc712db7406fbf7c8c4ee04237821b39f7fec036f4020ca4f11dcc6768",
+    "workflowRun": "42427431457",
+    "workflowCommit": "7df5fcf5fc3baef5b595729ba86efe99a3f3a5ce"
   }
 }

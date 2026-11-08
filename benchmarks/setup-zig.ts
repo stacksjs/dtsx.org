@@ -42,6 +42,9 @@ export interface NativeProvenance {
   bindingSha256: string
   librarySha256: string
   url: string
+  target?: string
+  compiler?: string
+  optimize?: string
 }
 
 /** Reject stale or modified installs before any samples are timed. */
@@ -57,6 +60,7 @@ export async function nativeProvenance(): Promise<NativeProvenance> {
   const library = await readFile(join(directory, 'prebuilt', platformKey, artifact.file))
   if (provenance.commit !== release.commit || provenance.platform !== platformKey
     || provenance.archiveSha256 !== artifact.sha256 || sha256(binding) !== release.binding.sha256
+    || ('librarySha256' in artifact && sha256(library) !== artifact.librarySha256)
     || sha256(library) !== provenance.librarySha256)
     throw new Error('Zig artifacts do not match the lock; run bun setup-zig.ts')
   return provenance
@@ -98,6 +102,7 @@ export async function setupNativeZig(): Promise<void> {
       bindingSha256: release.binding.sha256,
       librarySha256: sha256(await readFile(join(libraryDir, artifact.file))),
       url: `https://github.com/${release.repository}/releases/tag/${release.tag}`,
+      ...('target' in artifact ? { target: artifact.target, compiler: artifact.compiler, optimize: artifact.optimize } : {}),
     }
     await writeFile(join(packageDir, 'provenance.json'), JSON.stringify(provenance, null, 2) + '\n')
     await mkdir(join(import.meta.dir, '.native'), { recursive: true })

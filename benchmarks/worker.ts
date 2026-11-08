@@ -1,12 +1,13 @@
 /** Fresh process adapter: includes imports, reads, emission and writes. */
 import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
-const [tool, cwd, outdir] = process.argv.slice(2)
+const [tool, cwd, outdir, workload = 'annotated'] = process.argv.slice(2)
+const isolatedDeclarations = workload === 'annotated'
 process.chdir(cwd)
 await mkdir(outdir, { recursive: true })
 const files = (await readdir(join(cwd, 'src'))).filter(f => f.endsWith('.ts')).sort()
 const entry = join(cwd, 'src/index.ts')
-const options = { declaration: true, emitDeclarationOnly: true, isolatedDeclarations: true, strict: true, skipLibCheck: false, target: 99, module: 199, moduleResolution: 99, types: [], rootDir: join(cwd, 'src'), outDir: outdir }
+const options = { declaration: true, emitDeclarationOnly: true, isolatedDeclarations, strict: true, skipLibCheck: false, target: 99, module: 199, moduleResolution: 99, types: [], rootDir: join(cwd, 'src'), outDir: outdir }
 async function tsc(): Promise<void> {
   const ts = await import('typescript')
   const program = ts.createProgram(files.map(f => join(cwd, 'src', f)), options)
@@ -16,7 +17,8 @@ async function tsc(): Promise<void> {
 }
 if (tool === 'dtsx' || tool === 'dtsx-bundle') {
   const { generate } = await import('@stacksjs/dtsx')
-  const stats = await generate({ cwd, root: 'src', entrypoints: ['index.ts'], outdir, bundle: tool === 'dtsx-bundle', bundleOutput: 'index.d.ts', incremental: false, moduleSpecifierMode: 'node' })
+  const stats = await generate({ cwd, root: 'src', entrypoints: ['index.ts'], outdir, bundle: tool === 'dtsx-bundle', bundleOutput: 'index.d.ts', incremental: false, isolatedDeclarations })
+  if (stats.generationMode !== (isolatedDeclarations ? 'isolated' : 'semantic')) throw new Error('Generator did not use the requested declaration mode')
   if (stats.filesFailed) throw new Error(`${stats.filesFailed} files failed`)
 }
 else if (['oxc', 'swc', 'zig', 'ts-transpile'].includes(tool)) {
@@ -34,11 +36,12 @@ else if (['oxc', 'swc', 'zig', 'ts-transpile'].includes(tool)) {
     }
     if (swc) {
       const result = swc.transformSync(source, { filename: file, swcrc: false, configFile: false, jsc: { parser: { syntax: 'typescript' }, experimental: { emitIsolatedDts: true }, target: 'esnext' } })
-      output = JSON.parse(result.output ?? '{}').__swc_isolated_declarations__ ?? ''
+      const experimental = result as typeof result & { output?: string }
+      output = JSON.parse(experimental.output ?? '{}').__swc_isolated_declarations__ ?? ''
     }
     if (zig) {
       if (!zig.ZIG_AVAILABLE) throw new Error('Pinned Zig library could not be loaded')
-      output = zig.processSource(source, true, true)
+      output = zig.processSource(source, true, isolatedDeclarations)
     }
     if (ts) {
       const result = ts.transpileDeclaration(source, { fileName: join(cwd, 'src', file), compilerOptions: options, reportDiagnostics: true })
@@ -79,14 +82,14 @@ else if (tool === 'rollup-dts') {
 }
 else if (tool === 'api-extractor') {
   await tsc()
-  const { Extractor, ExtractorConfig } = await import('@microsoft/api-extractor')
-  const config = ExtractorConfig.prepare({ configObject: { projectFolder: cwd, mainEntryPointFilePath: join(outdir, 'index.d.ts'), compiler: { tsconfigFilePath: join(cwd, 'tsconfig.json') }, apiReport: { enabled: false }, docModel: { enabled: false }, dtsRollup: { enabled: true, untrimmedFilePath: join(outdir, 'bundle.d.ts') }, tsdocMetadata: { enabled: false }, messages: { extractorMessageReporting: { default: { logLevel: 'none' } } } }, configObjectFullPath: join(cwd, 'api-extractor.json'), packageJsonFullPath: join(cwd, 'package.json') })
+  const { Extractor, ExtractorConfig, ExtractorLogLevel } = await import('@microsoft/api-extractor')
+  const config = ExtractorConfig.prepare({ configObject: { projectFolder: cwd, mainEntryPointFilePath: join(outdir, 'index.d.ts'), compiler: { tsconfigFilePath: join(cwd, 'tsconfig.json') }, apiReport: { enabled: false }, docModel: { enabled: false }, dtsRollup: { enabled: true, untrimmedFilePath: join(outdir, 'bundle.d.ts') }, tsdocMetadata: { enabled: false }, messages: { extractorMessageReporting: { default: { logLevel: ExtractorLogLevel.None } } } }, configObjectFullPath: join(cwd, 'api-extractor.json'), packageJsonFullPath: join(cwd, 'package.json') })
   if (!Extractor.invoke(config, { localBuild: true }).succeeded) throw new Error('API Extractor failed')
 }
 else if (tool === 'unplugin-dts') {
   const { build } = await import('vite')
   const { default: dts } = await import('unplugin-dts/vite')
-  await build({ root: cwd, configFile: false, logLevel: 'silent', plugins: [dts({ tsconfigPath: join(cwd, 'tsconfig.json'), outDir: outdir, bundleTypes: true })], build: { outDir: outdir, lib: { entry, formats: ['es'], fileName: 'index' }, emptyOutDir: false, minify: false } })
+  await build({ root: cwd, configFile: false, logLevel: 'silent', plugins: [dts({ tsconfigPath: join(cwd, 'tsconfig.json'), outDirs: [outdir], bundleTypes: true })], build: { outDir: outdir, lib: { entry, formats: ['es'], fileName: 'index' }, emptyOutDir: false, minify: false } })
 }
 else if (tool === 'unplugin-isolated') {
   const { rolldown } = await import('rolldown')

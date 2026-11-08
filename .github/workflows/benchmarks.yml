@@ -7,6 +7,11 @@ on:
         type: choice
         options: [all, linux, macos]
         default: all
+      workload:
+        description: Fixture workload
+        type: choice
+        options: [all, annotated, inferred]
+        default: all
       qualification_only:
         description: Qualify native Zig without collecting published timings
         type: boolean
@@ -20,7 +25,10 @@ jobs:
       fail-fast: false
       matrix:
         os: ${{ fromJSON(inputs.platform == 'linux' && '["ubuntu-latest"]' || inputs.platform == 'macos' && '["macos-latest"]' || '["ubuntu-latest","macos-latest"]') }}
-    timeout-minutes: 45
+        workload: ${{ fromJSON(inputs.workload == 'inferred' && '["inferred"]' || inputs.workload == 'annotated' && '["annotated"]' || '["annotated","inferred"]') }}
+    timeout-minutes: 60
+    env:
+      BENCHMARK_OUTPUT: public/benchmarks/results${{ matrix.os == 'ubuntu-latest' && '-linux' || '' }}${{ matrix.workload == 'inferred' && '-inferred' || '' }}.json
     steps:
       - uses: actions/checkout@v6
       - uses: oven-sh/setup-bun@v2
@@ -28,19 +36,21 @@ jobs:
           bun-version: 1.4.4
       - run: bun install --frozen-lockfile
         working-directory: benchmarks
+      - name: Verify fixture and consumer controls outside timing
+        run: bun test fixtures.test.ts
+        working-directory: benchmarks
       - name: Install checksum-pinned native release
         run: bun setup-zig.ts
         working-directory: benchmarks
       - name: Clear the previous snapshot from the measurement output
         if: ${{ !inputs.qualification_only }}
-        run: bun -e "const fs = await import('node:fs/promises'); await fs.unlink('../public/benchmarks/results.json')"
-        working-directory: benchmarks
+        run: bun -e "const fs = await import('node:fs/promises'); await fs.rm(process.env.BENCHMARK_OUTPUT, { force:true })"
       - name: Run sequential qualified benchmarks
-        run: bun run.ts ${{ inputs.qualification_only && '--smoke --tools=zig' || '' }} --require-all
+        run: bun run.ts --workload=${{ matrix.workload }} ${{ inputs.qualification_only && '--smoke --tools=zig' || '' }} ${{ (inputs.qualification_only || matrix.workload == 'annotated') && '--require-all' || '--require-baselines' }}
         working-directory: benchmarks
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: benchmark-results-${{ matrix.os }}
-          path: ${{ inputs.qualification_only && 'benchmarks/smoke.json' || 'public/benchmarks/results.json' }}
+          name: benchmark-results-${{ matrix.os }}-${{ matrix.workload }}
+          path: ${{ inputs.qualification_only && format('benchmarks/smoke-{0}.json', matrix.workload) || env.BENCHMARK_OUTPUT }}
           retention-days: 90

@@ -5,6 +5,9 @@ import { cpus, platform, arch, release, tmpdir, totalmem } from 'node:os'
 import { join } from 'node:path'
 import ts from 'typescript'
 import { nativeProvenance } from './setup-zig'
+import { entrySource, moduleSource, negativeConsumer, positiveConsumer, workloads, type Workload } from './fixtures'
+const workload = (process.argv.find(argument => argument.startsWith('--workload='))?.slice('--workload='.length) ?? 'annotated') as Workload
+if (!workloads.includes(workload)) throw new Error('Unknown benchmark workload')
 const smoke = process.argv.includes('--smoke')
 const iterations = smoke ? 1 : 9
 const warmups = smoke ? 0 : 2
@@ -40,7 +43,7 @@ if (requestedTools?.some(id => !allAdapters.some(tool => tool.id === id))) throw
 const adapters = requestedTools ? allAdapters.filter(tool => requestedTools.includes(tool.id)) : allAdapters
 if (!adapters.length) throw new Error('No benchmark tools selected')
 const compilerOptions: ts.CompilerOptions = { target: 99, module: 199, moduleResolution: 99, strict: true, skipLibCheck: false, types: [], noEmit: true }
-interface Row { id: string; name: string; group: string; package: string; version: string; modules: number; sourceFiles: number; status: string; error?: string; samplesMs: number[]; medianMs: number | null; minMs: number | null; maxMs: number | null; outputSha256?: string }
+interface Row { id: string; name: string; group: string; package: string; version: string; modules: number; sourceFiles: number; fixtureSha256: string; status: string; error?: string; failureStage?: string; samplesMs: number[]; medianMs: number | null; minMs: number | null; maxMs: number | null; outputSha256?: string }
 const results: Row[] = []
 function diagnostics(files: string[]) { return ts.getPreEmitDiagnostics(ts.createProgram(files, compilerOptions)) }
 function assert(value: unknown, message: string): asserts value { if (!value) throw new Error(message) }
@@ -64,10 +67,10 @@ async function qualify(cwd: string, out: string, count: number, bundled: boolean
   const path = bundled ? join(standalone, 'index.d.ts') : entry
   if (bundled) await writeFile(path, await readFile(entry))
   const imported = path.replace(/\.d\.(ts|mts)$/, '.js')
-  await writeFile(join(cwd, 'positive.ts'), Array.from({ length: count }, (_, i) => `import { create${i}, Store${i}, Status${i}, type Model${i}, type Patch${i}, version${i}, type Listener${i} } from '${imported}';\nconst item${i}: Model${i} = create${i}('ok', ${i});\nconst value${i}: number = item${i}.value;\nconst result${i}: string = new Store${i}<string>('ok').get();\nconst status${i}: Status${i} = Status${i}.Ready;\nconst patch${i}: Patch${i} = { value: ${i} };\nconst versionText${i}: string = version${i};\nconst listener${i}: Listener${i}<number> = (value: number): void => { void value };`).join('\n'))
+  await writeFile(join(cwd, 'positive.ts'), positiveConsumer(workload, imported, count))
   const positive = diagnostics([join(cwd, 'positive.ts')])
   assert(positive.length === 0, `Positive consumer: ${ts.formatDiagnostics(positive, { getCurrentDirectory: () => cwd, getCanonicalFileName: f => f, getNewLine: () => '\n' })}`)
-  await writeFile(join(cwd, 'negative.ts'), `import { create0, Store0 } from '${imported}';\nconst wrong: string = create0('ok', 1).value;\nconst bad: number = new Store0<string>('ok').get();`)
+  await writeFile(join(cwd, 'negative.ts'), negativeConsumer(workload, imported))
   const negative = diagnostics([join(cwd, 'negative.ts')])
   assert(negative.length === 2 && negative.every(d => d.code === 2322 && d.file?.fileName.endsWith('negative.ts')), 'Expected exactly two negative TS2322 controls')
   return createHash('sha256').update((await Promise.all(outputs.map(f => readFile(f, 'utf8')))).join('\n')).digest('hex')
@@ -78,17 +81,22 @@ try {
     await mkdir(join(cwd, 'src'), { recursive: true })
     await symlink(join(import.meta.dir, 'node_modules'), join(cwd, 'node_modules'))
     await writeFile(join(cwd, 'package.json'), JSON.stringify({ name: 'declaration-benchmark', type: 'module', version: '1.0.0' }))
-    const index: string[] = []
+    const fixtureHash = createHash('sha256')
     for (let i = 0; i < count; i++) {
-      await writeFile(join(cwd, `src/module${i}.ts`), `export interface Model${i} { readonly id: string; value: number; tags?: readonly string[] }\nexport type Patch${i} = Partial<Pick<Model${i}, 'value' | 'tags'>>;\nexport enum Status${i} { Ready = 'ready', Pending = 'pending' }\nexport function create${i}(id: string, value: number): Model${i} { return { id, value } }\nexport class Store${i}<T> {\n  private readonly data: T;\n  constructor(data: T) { this.data = data }\n  get(): T { return this.data }\n}\nexport type Listener${i}<T> = (value: T) => void;\nexport const version${i}: string = '1.0.0';\n`)
-      index.push(`export { create${i}, Store${i}, Status${i}, version${i}, type Model${i}, type Patch${i}, type Listener${i} } from './module${i}.js'`)
+      const source = moduleSource(workload, i)
+      await writeFile(join(cwd, `src/module${i}.ts`), source)
+      fixtureHash.update(`module${i}.ts\0${source}\0`)
     }
-    await writeFile(join(cwd, 'src/index.ts'), index.join('\n'))
-    await writeFile(join(cwd, 'tsconfig.json'), JSON.stringify({ compilerOptions: { target: 'ESNext', module: 'NodeNext', moduleResolution: 'NodeNext', strict: true, isolatedDeclarations: true, declaration: true, emitDeclarationOnly: true, skipLibCheck: false, types: [], rootDir: 'src' }, include: ['src'] }))
+    const entry = entrySource(workload, count)
+    await writeFile(join(cwd, 'src/index.ts'), entry)
+    fixtureHash.update(`index.ts\0${entry}\0`)
+    const fixtureSha256 = fixtureHash.digest('hex')
+    await writeFile(join(cwd, 'tsconfig.json'), JSON.stringify({ compilerOptions: { target: 'ESNext', module: 'NodeNext', moduleResolution: 'NodeNext', strict: true, isolatedDeclarations: workload === 'annotated', declaration: true, emitDeclarationOnly: true, skipLibCheck: false, types: [], rootDir: 'src' }, include: ['src'] }))
     assert(diagnostics([join(cwd, 'src/index.ts')]).length === 0, 'Invalid authored fixture')
     const samples = new Map(adapters.map(t => [t.id, [] as number[]]))
     const errors = new Map<string, string>()
     const hashes = new Map<string, string>()
+    const failureStages = new Map<string, string>()
     for (let round = -warmups; round < iterations; round++) {
       await checkDiskSpace()
       const offset = (round + warmups) % adapters.length
@@ -97,30 +105,39 @@ try {
         const out = join(cwd, 'output')
         await rm(out, { recursive: true, force: true })
         const start = performance.now()
-        const child = Bun.spawn([process.execPath, join(import.meta.dir, 'worker.ts'), tool.id, cwd, out], { cwd: import.meta.dir, env: { PATH: process.env.PATH ?? '', HOME: process.env.HOME ?? '', NO_COLOR: '1' }, stdout: 'pipe', stderr: 'pipe', timeout: 120000 })
+        const child = Bun.spawn([process.execPath, join(import.meta.dir, 'worker.ts'), tool.id, cwd, out, workload], { cwd: import.meta.dir, env: { PATH: process.env.PATH ?? '', HOME: process.env.HOME ?? '', NO_COLOR: '1' }, stdout: 'pipe', stderr: 'pipe', timeout: 120000 })
         const [exit, stdout, stderr] = await Promise.all([child.exited, new Response(child.stdout).text(), new Response(child.stderr).text()])
         const elapsed = performance.now() - start
+        let failureStage = 'emission'
         try {
           assert(exit === 0, `Exit ${exit}: ${(stdout + stderr).slice(-6000)}`)
+          failureStage = 'consumer qualification'
           hashes.set(tool.id, await qualify(cwd, out, count, tool.group === 'bundled-project'))
           if (round >= 0) samples.get(tool.id)!.push(elapsed)
           console.log(`${count} modules | ${tool.id} | round ${round + 1} | ${elapsed.toFixed(2)} ms | qualified`)
         }
-        catch (error) { errors.set(tool.id, String(error)); console.log(`${count} modules | ${tool.id} | FAILED: ${String(error).slice(0, 250)}`) }
+        catch (error) { errors.set(tool.id, String(error).slice(0, 12000)); failureStages.set(tool.id, failureStage); console.log(`${count} modules | ${tool.id} | FAILED (${failureStage}): ${String(error).slice(-1000)}`) }
       }
     }
     for (const tool of adapters) {
-      const values = samples.get(tool.id)!
+      const values = errors.has(tool.id) ? [] : samples.get(tool.id)!
       const sorted = [...values].sort((a, b) => a - b)
       let version = tool.id === 'zig' ? nativeZig.version : 'see lockfile'
       try { if (tool.id !== 'zig') version = (await Bun.file(Bun.resolveSync(`${tool.package}/package.json`, import.meta.dir)).json()).version } catch {}
-      results.push({ ...tool, version, modules: count, sourceFiles: count + 1, status: errors.has(tool.id) ? 'failed' : 'passed', error: errors.get(tool.id), samplesMs: values, medianMs: sorted.length ? sorted[Math.floor(sorted.length / 2)] : null, minMs: sorted[0] ?? null, maxMs: sorted.at(-1) ?? null, outputSha256: hashes.get(tool.id) })
+      results.push({ ...tool, version, modules: count, sourceFiles: count + 1, fixtureSha256, status: errors.has(tool.id) ? 'failed' : 'passed', error: errors.get(tool.id), failureStage: failureStages.get(tool.id), samplesMs: values, medianMs: sorted.length ? sorted[Math.floor(sorted.length / 2)] : null, minMs: sorted[0] ?? null, maxMs: sorted.at(-1) ?? null, outputSha256: hashes.get(tool.id) })
     }
   }
-  const result = { schemaVersion: 2, smoke, nativeZig, executionEnvironment: process.env.GITHUB_ACTIONS === 'true' ? { kind: 'github-actions', repository: process.env.GITHUB_REPOSITORY, runId: process.env.GITHUB_RUN_ID, commit: process.env.GITHUB_SHA, runnerOS: process.env.RUNNER_OS, runnerArch: process.env.RUNNER_ARCH } : { kind: 'local' }, measuredAt: new Date().toISOString(), runtime: `Bun ${Bun.version}`, machine: { platform: platform(), arch: arch(), os: release(), cpu: cpus()[0]?.model, cores: cpus().length, memoryBytes: totalmem() }, methodology: { iterations, warmups, cache: 'Fresh process and output directory per sample; warm filesystem caches; no incremental/result cache reuse.', ordering: 'Sequential, deterministically rotating tool order each round.', timing: 'Wall clock: process startup, imports, reads, generation, writes and disposal. Cleanup and qualification excluded.', correctness: 'Every sample strictly consumed with TypeScript 6 and skipLibCheck=false. All module exports exercised. Two negative assignments require exactly TS2322. Bundles checked standalone.', scope: 'Synthetic annotated modules, re-exports, generics, private class fields, mapped types, enums. No JSX, dependencies, watch or declaration maps. Not proof of arbitrary TypeScript equivalence.', groups: { 'project-emit': 'Per-module declarations without a required semantic check.', 'checked-project': 'Includes semantic checking. Do not rank against unchecked emitters.', 'bundled-project': 'Standalone declaration entry. Extra typechecking/JavaScript work varies by tool; see adapters.' } }, results }
-  await writeFile(join(import.meta.dir, smoke ? 'smoke.json' : '../public/benchmarks/results.json'), JSON.stringify(result, null, 2) + '\n')
+  const definitionFiles = ['run.ts', 'worker.ts', 'fixtures.ts', 'bun.lock']
+  const benchmarkDefinition = Object.fromEntries(await Promise.all(definitionFiles.map(async file => [file, createHash('sha256').update(await readFile(join(import.meta.dir, file))).digest('hex') as string])))
+  const result = { schemaVersion: 3, smoke, workload, benchmarkDefinition, nativeZig, executionEnvironment: process.env.GITHUB_ACTIONS === 'true' ? { kind: 'github-actions', repository: process.env.GITHUB_REPOSITORY, runId: process.env.GITHUB_RUN_ID, commit: process.env.GITHUB_SHA, runnerOS: process.env.RUNNER_OS, runnerArch: process.env.RUNNER_ARCH } : { kind: 'local' }, measuredAt: new Date().toISOString(), runtime: `Bun ${Bun.version}`, machine: { platform: platform(), arch: arch(), os: release(), cpu: cpus()[0]?.model, cores: cpus().length, memoryBytes: totalmem() }, methodology: { iterations, warmups, cache: 'Fresh process and output directory per sample; warm filesystem caches; no incremental/result cache reuse.', ordering: 'Sequential, deterministically rotating tool order each round.', timing: 'Wall clock: process startup, imports, reads, generation, writes and disposal. Cleanup and qualification excluded.', correctness: 'Every sample strictly consumed with TypeScript 6 and skipLibCheck=false. All module exports exercised. Two negative assignments require exactly TS2322. Inferred API positions additionally reject any and preserve widening. Bundles checked standalone.', scope: workload === 'annotated' ? 'Explicit annotations, re-exports, generics, private class fields, mapped types and enums.' : 'No type annotations: inferred parameter defaults, return objects, arrow functions, class members, mutable objects, arrays and imported function results. No JSX, dependencies, watch or declaration maps. Not proof of arbitrary TypeScript equivalence.', groups: { 'project-emit': 'Per-module declarations without a required semantic check.', 'checked-project': 'Includes semantic checking. Do not rank against unchecked emitters.', 'bundled-project': 'Standalone declaration entry. Extra typechecking/JavaScript work varies by tool; see adapters.' } }, results }
+  const output = smoke ? `smoke-${workload}.json` : `../public/benchmarks/results${platform() === 'linux' ? '-linux' : ''}${workload === 'inferred' ? '-inferred' : ''}.json`
+  await writeFile(join(import.meta.dir, output), JSON.stringify(result, null, 2) + '\n')
   const failures = results.filter(row => row.status === 'failed').length
   console.log(`Saved ${results.length} cases; ${failures} failed qualifications.`)
+  if (process.argv.includes('--require-baselines')) {
+    const baselines = results.filter(row => row.id === 'tsc' || row.id === 'tsgo')
+    assert(baselines.length === counts.length * 2 && baselines.every(row => row.status === 'passed'), 'Both checked TypeScript baselines must qualify at every size')
+  }
   if (failures && process.argv.includes('--require-all')) throw new Error(`${failures} tools failed qualification`)
 }
 finally { await rm(root, { recursive: true, force: true }) }

@@ -212,7 +212,7 @@ docs/erd.md
 
 # Benchmark installs and qualification scratch.
 benchmarks/node_modules/
-benchmarks/smoke.json
+benchmarks/smoke*.json
 benchmarks/.zig-cache/
 # Generated framework API/database artifacts are not used by the static website.
 /storage/framework/api/
