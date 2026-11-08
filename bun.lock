@@ -6,7 +6,7 @@
       "name": "stacks",
       "dependencies": {
         "@stacksjs/actions": "^0.75.513",
-        "@stacksjs/dtsx": "0.11.31",
+        "@stacksjs/dtsx": "0.11.32",
         "@stacksjs/env": "^0.75.513",
         "@stacksjs/path": "^0.75.513",
         "@stacksjs/stx": "0.2.807",
@@ -122,7 +122,7 @@
 
     "@stacksjs/docs": ["@stacksjs/docs@0.75.513", "", { "dependencies": { "@stacksjs/bunpress": "^0.2.25", "@stacksjs/config": "0.75.513", "@stacksjs/path": "0.75.513" } }, "sha512-2ZSize0ngJnRRg6HnpBCagWOiWtlr3QRhyS3R6s8dUvqRNfvjRT4dVZ/kUw29iSaCx1zhp27WbFJIRLffzGCFA=="],
 
-    "@stacksjs/dtsx": ["@stacksjs/dtsx@0.11.31", "", { "dependencies": { "@stacksjs/clapp": "^0.2.16" }, "bin": { "dtsx": "./dist/bin/cli.js" } }, "sha512-AKgg3oQjWMqXtQoTlsnJZXza/Ky/arPSD9jEeQnlZxyzgi1DoAa4ZOFXD6Qs0g6f0518tePWWJP5gHOqdZCuPQ=="],
+    "@stacksjs/dtsx": ["@stacksjs/dtsx@0.11.32", "", { "peerDependencies": { "prettier": "^3.9.10" }, "optionalPeers": ["prettier"], "bin": { "dtsx": "./dist/bin/cli.js" } }, "sha512-2Mg45WwbrkYWrkVii83SfHIG0VJkidRZxVwrXx/XRiRdIXOo2/MeJIXjdAd5Aquethb95YmSxFLUFJKPqQ5hiw=="],
 
     "@stacksjs/email": ["@stacksjs/email@0.75.513", "", { "dependencies": { "@stacksjs/config": "0.75.513", "@stacksjs/database": "0.75.513", "@stacksjs/events": "0.75.513", "@stacksjs/logging": "0.75.513", "@stacksjs/mail": "^0.3.11", "@stacksjs/path": "0.75.513", "@stacksjs/storage": "0.75.513", "@stacksjs/strings": "0.75.513", "@stacksjs/stx": "0.2.807", "@stacksjs/ts-cloud": "^0.16.109", "@stacksjs/utils": "0.75.513" }, "peerDependencies": { "@stacksjs/queue": "0.75.513" }, "optionalPeers": ["@stacksjs/queue"] }, "sha512-n/jKvfLTYDXJ2NhsBK7VOTAoT99oOclp4PUJi4VcYIGdW05zr4ivNTXu8oxrqqomUvmx/DwCtin5Ydr1JPSAAQ=="],
 
@@ -439,5 +439,7 @@
     "very-happy-dom": ["very-happy-dom@0.4.1", "", { "hasInstallScript": true }, "sha512-B3DLXirkv0rgKOzItBA7o28VIkuRyhCPbfL2HZZYGCp4ccxun3P5pnXWvE6FmDaWORBExBZzHgl66xNMfu+Pyg=="],
 
     "@stacksjs/realtime/ts-broadcasting": ["ts-broadcasting@0.0.12", "", { "bin": { "broadcast": "./dist/bin/cli.js" } }, "sha512-yHMcQRxRmDen16oDHb2/5UiOAs4DLHZ1b4tKxlSHY9cD4+UB2v5eDBeHPsHf1qa/XKGCxTjZB8oxE7sLzGALCg=="],
+
+    "bun-plugin-dtsx/@stacksjs/dtsx": ["@stacksjs/dtsx@0.11.31", "", { "dependencies": { "@stacksjs/clapp": "^0.2.16" }, "bin": { "dtsx": "./dist/bin/cli.js" } }, "sha512-AKgg3oQjWMqXtQoTlsnJZXza/Ky/arPSD9jEeQnlZxyzgi1DoAa4ZOFXD6Qs0g6f0518tePWWJP5gHOqdZCuPQ=="],
   }
 }

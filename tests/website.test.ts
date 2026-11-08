@@ -44,7 +44,7 @@ const report = snapshots[0].report
 const zigRelease = await Bun.file(join(root, 'benchmarks/zig-release.json')).json()
 const configurationIds = ['dtsx', 'zig', 'oxc', 'swc', 'ts-transpile', 'tsc', 'tsgo', 'dtsx-bundle', 'tsdown-oxc', 'tsdown-tsc', 'tsup', 'rollup-dts', 'api-extractor', 'dts-bundle-generator', 'unplugin-dts', 'unplugin-isolated']
 const expectedCases = configurationIds.flatMap(id => [1, 25, 100].map(count => `${id}:${count}`)).sort()
-const frozenDefinition = Object.fromEntries(await Promise.all(['run.ts', 'worker.ts', 'fixtures.ts', 'bun.lock'].map(async file => [file, createHash('sha256').update(await readFile(join(root, 'benchmarks', file))).digest('hex')])))
+const frozenDefinition = Object.fromEntries(await Promise.all(['run.ts', 'worker.ts', 'fixtures.ts', 'bun.lock', 'native-zig.ts', 'setup-zig.ts', 'zig-release.json'].map(async file => [file, createHash('sha256').update(await readFile(join(root, 'benchmarks', file))).digest('hex')])))
 
 test('all four full snapshots use the frozen harness, locked native artifacts and complete case matrix', () => {
   for (const snapshot of snapshots) {
@@ -71,7 +71,7 @@ test('all four full snapshots use the frozen harness, locked native artifacts an
     if (snapshot.platform === 'linux') {
       expect(native.target).toBe(artifact.target)
       expect(native.compiler).toBe(artifact.compiler)
-      expect(native.optimize).toBe('ReleaseFast')
+      expect(native.optimize).toBe(artifact.optimize)
       expect(native.librarySha256).toBe(artifact.librarySha256)
     }
     for (const row of data.results) {
@@ -79,7 +79,7 @@ test('all four full snapshots use the frozen harness, locked native artifacts an
       expect(row.sourceFiles).toBe(row.modules + 1)
       expect(row.fixtureSha256).toMatch(/^[a-f\d]{64}$/)
       if (row.id === 'zig') expect(row.version).toBe(zigRelease.version)
-      if (snapshot.workload === 'annotated' || row.id === 'tsc' || row.id === 'tsgo') expect(row.status).toBe('passed')
+      if (snapshot.workload === 'annotated' || ['tsc', 'tsgo', 'dtsx', 'zig', 'dtsx-bundle'].includes(row.id)) expect(row.status).toBe('passed')
       if (row.status === 'passed') {
         expect(row.samplesMs).toHaveLength(9)
         expect(row.samplesMs.every(time => Number.isFinite(time) && time > 0)).toBe(true)

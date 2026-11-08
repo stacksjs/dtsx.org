@@ -49,6 +49,10 @@ jobs:
         id: measure
         run: bun run.ts --workload=${{ matrix.workload }} ${{ inputs.qualification_only && '--smoke --tools=zig' || '' }} ${{ (inputs.qualification_only || matrix.workload == 'annotated') && '--require-all' || '--require-baselines' }}
         working-directory: benchmarks
+      - name: Require repaired emitters to qualify at every size
+        if: ${{ !inputs.qualification_only }}
+        run: |
+          bun -e "const data=await Bun.file(process.env.BENCHMARK_OUTPUT).json(); for(const id of ['dtsx','zig','dtsx-bundle']){const rows=data.results.filter(row=>row.id===id);if(rows.length!==3||rows.some(row=>row.status!=='passed'||row.samplesMs.length!==9))throw new Error(id+' did not fully qualify')}"
       - uses: actions/upload-artifact@v7
         if: ${{ always() && steps.measure.outcome != 'skipped' }}
         with:

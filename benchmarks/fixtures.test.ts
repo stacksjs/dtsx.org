@@ -22,27 +22,35 @@ test('inferred fixtures contain no type annotations or type assertions', () => {
   }
 })
 
-test('the strict inference consumer accepts compiler output and rejects degraded types', async () => {
+test.each(['annotated', 'inferred'] as const)('the strict %s consumer accepts compiler output and rejects degraded types', async (workload) => {
   const directory = await mkdtemp(join(tmpdir(), 'dtsx-inference-controls-'))
   try {
     await mkdir(join(directory, 'src'))
-    for (const index of [0, 1]) await writeFile(join(directory, `src/module${index}.ts`), moduleSource('inferred', index))
+    for (const index of [0, 1]) await writeFile(join(directory, `src/module${index}.ts`), moduleSource(workload, index))
     const entry = join(directory, 'src/index.ts')
-    await writeFile(entry, entrySource('inferred', 2))
+    await writeFile(entry, entrySource(workload, 2))
     const options: ts.CompilerOptions = { strict: true, skipLibCheck: false, types: [], target: ts.ScriptTarget.ESNext, module: ts.ModuleKind.NodeNext, moduleResolution: ts.ModuleResolutionKind.NodeNext }
     const program = ts.createProgram([entry], { ...options, declaration: true, emitDeclarationOnly: true, outDir: join(directory, 'out') })
     expect(ts.getPreEmitDiagnostics(program)).toHaveLength(0)
     expect(program.emit().emitSkipped).toBe(false)
     const consumer = join(directory, 'consumer.ts')
-    await writeFile(consumer, positiveConsumer('inferred', join(directory, 'out/index.js'), 2))
+    await writeFile(consumer, positiveConsumer(workload, join(directory, 'out/index.js'), 2))
     function diagnostics() { return ts.getPreEmitDiagnostics(ts.createProgram([consumer], { ...options, noEmit: true })) }
     expect(diagnostics()).toHaveLength(0)
     const path = join(directory, 'out/module0.d.ts')
     const declaration = await readFile(path, 'utf8')
     await writeFile(path, declaration.replaceAll('value: number', 'value: any'))
     expect(diagnostics().some(error => error.code === 2344)).toBe(true)
-    await writeFile(path, declaration.replace('retries: number', 'retries: 3'))
-    expect(diagnostics().some(error => error.code === 2322)).toBe(true)
+    const parameter = workload === 'inferred' ? 'create0(id?: string' : 'create0(id: string'
+    expect(declaration).toContain(parameter)
+    await writeFile(path, declaration.replace(parameter, parameter.replace('string', 'any')))
+    expect(diagnostics().some(error => error.code === 2344)).toBe(true)
+    if (workload === 'inferred') {
+      await writeFile(path, declaration.replace('id?: string', 'id: string | undefined'))
+      expect(diagnostics().some(error => error.code === 2344)).toBe(true)
+      await writeFile(path, declaration.replace('retries: number', 'retries: 3'))
+      expect(diagnostics().some(error => error.code === 2322)).toBe(true)
+    }
   }
   finally {
     await rm(directory, { recursive: true, force: true })

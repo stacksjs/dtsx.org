@@ -52,7 +52,9 @@ jobs:
         run: bun setup-zig.ts
         working-directory: benchmarks
       - name: Qualify actual native declaration output
-        run: bun run.ts --smoke --tools=zig --require-all
+        run: |
+          bun run.ts --smoke --tools=zig --require-all
+          bun run.ts --smoke --tools=zig --workload=inferred --require-all
         working-directory: benchmarks
   deploy:
     needs: [check, native-zig]

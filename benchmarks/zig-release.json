@@ -1,11 +1,11 @@
 {
-  "version": "0.11.31",
+  "version": "0.11.32",
   "repository": "stacksjs/dtsx",
-  "tag": "v0.11.31",
-  "commit": "78404ebf3762331a5d3204ed5d31731de5ad75c2",
+  "tag": "v0.11.32",
+  "commit": "28aff13af71eb14dbd1d6be55f696a8b191dd675",
   "binding": {
     "path": "packages/zig-dtsx/src/index.ts",
-    "sha256": "95da33e967e688c9b406991df9f6a957976ed11837af556ffd463500c51c19df"
+    "sha256": "bac65dffe5f66ad8e76987dc1d24673a11f190c0867e60f62049ad2ec1bac410"
   },
   "license": {
     "path": "packages/zig-dtsx/LICENSE.md",
@@ -13,48 +13,58 @@
   },
   "libraries": {
     "linux-x64": {
-      "asset": "zig-dtsx-lib-linux-x64-gnu.tar.gz",
-      "sha256": "0fdf6ae1a232f0b6df03b603b3deb4e31b656883564cdfd4c76a0a72018477dc",
+      "asset": "zig-dtsx-lib-linux-x64.tar.gz",
+      "sha256": "a4014b3d50f4aef09de4e3c117921269bb358bd78fc21b0c1d54fd6e262b7c11",
       "file": "libzig-dtsx.so",
-      "librarySha256": "0515598df10db0e700c5e1e7680ddbf148dc7092dea2d4957f11abc441b57bd1",
+      "librarySha256": "21f029daab0a5b0ce89908f676d68214c51ac67d6a154810d8d1db20c2d66fed",
       "target": "x86_64-linux-gnu.2.17",
-      "compiler": "0.17.0-dev.1282+c0f9b51d8",
-      "optimize": "ReleaseFast"
+      "compiler": "0.17.1",
+      "optimize": "fast"
     },
     "linux-arm64": {
-      "asset": "zig-dtsx-lib-linux-arm64-gnu.tar.gz",
-      "sha256": "995cc9031f45a2a2100c67a0fc531559fab5c13e1195da537a772cbcb7942634",
+      "asset": "zig-dtsx-lib-linux-arm64.tar.gz",
+      "sha256": "0ad7e2044e327b355223e5f5dacbf3a2ea7324d38ead12c36df8f3cd065880a1",
       "file": "libzig-dtsx.so",
-      "librarySha256": "1e84643c8e35117885f2dd7b33aa351329070b5d56db02bae4e220a0069a1b95",
+      "librarySha256": "8c48bc15baf3c49c46c86af28a962ec0e59d4f48316b8530128a8dae329c492e",
       "target": "aarch64-linux-gnu.2.17",
-      "compiler": "0.17.0-dev.1282+c0f9b51d8",
-      "optimize": "ReleaseFast"
+      "compiler": "0.17.1",
+      "optimize": "fast"
     },
     "darwin-x64": {
       "asset": "zig-dtsx-lib-darwin-x64.tar.gz",
-      "sha256": "e1578c7d67e27e617a46c968131bcffb657ffdcc29e59355c348bb24fe5ef066",
-      "file": "libzig-dtsx.dylib"
+      "sha256": "6967715083b7ca656345170ecf0a8e840e3e7deb9f5cf097d64c5cf27f404368",
+      "file": "libzig-dtsx.dylib",
+      "librarySha256": "ab8602194811a08b2c6e6128057af4871a23a38b8e705c125e8d23c269882277",
+      "target": "x86_64-macos",
+      "compiler": "0.17.1",
+      "optimize": "fast"
     },
     "darwin-arm64": {
       "asset": "zig-dtsx-lib-darwin-arm64.tar.gz",
-      "sha256": "5209aac842b7c17f95c01df0a6a5a7f64de442ed1323743599362575df066eda",
-      "file": "libzig-dtsx.dylib"
+      "sha256": "b037f8dea5f5383377dccf25a702895beefd56347121355f9b4d5eaa0d116c14",
+      "file": "libzig-dtsx.dylib",
+      "librarySha256": "accf320aa8909559e04689db9887223c5883aed3a9540aa6438358cc1bca841d",
+      "target": "aarch64-macos",
+      "compiler": "0.17.1",
+      "optimize": "fast"
     },
     "windows-x64": {
       "asset": "zig-dtsx-lib-windows-x64.tar.gz",
-      "sha256": "d4031b96dead62452e28f19ab899230d31608b1f1a75a4ca1d1b41ca495f6d99",
-      "file": "zig-dtsx.dll"
+      "sha256": "25cec119cac1089c62147196697265588e5499578d56b0a58d6a3252a9f3bd9a",
+      "file": "zig-dtsx.dll",
+      "librarySha256": "0203438c9ae3c1831e74efb6e19e098f3a9b128ce3cd4c629a22f2b42a2463fa",
+      "target": "x86_64-windows",
+      "compiler": "0.17.1",
+      "optimize": "fast"
     },
     "freebsd-x64": {
       "asset": "zig-dtsx-lib-freebsd-x64.tar.gz",
-      "sha256": "dd3f1c8eaf66165a9de3c0cb38f1416a6b2f92c4cd13929196e7c51c9cb5f265",
-      "file": "libzig-dtsx.so"
+      "sha256": "120291cc0173a84e6e6deb8b6d5a7d4735dd046157a116ad2841647bfd41fbf1",
+      "file": "libzig-dtsx.so",
+      "librarySha256": "39bf67216cda227deb21e73bbe09369b2d2d2a5db3d928273f96b92722c718f6",
+      "target": "x86_64-freebsd",
+      "compiler": "0.17.1",
+      "optimize": "fast"
     }
-  },
-  "linuxRepair": {
-    "manifest": "https://github.com/stacksjs/dtsx/releases/download/v0.11.31/linux-gnu-manifest.json",
-    "sha256": "5175e6bc712db7406fbf7c8c4ee04237821b39f7fec036f4020ca4f11dcc6768",
-    "workflowRun": "42427431457",
-    "workflowCommit": "7df5fcf5fc3baef5b595729ba86efe99a3f3a5ce"
   }
 }

@@ -21,6 +21,20 @@ if (tool === 'dtsx' || tool === 'dtsx-bundle') {
   if (stats.generationMode !== (isolatedDeclarations ? 'isolated' : 'semantic')) throw new Error('Generator did not use the requested declaration mode')
   if (stats.filesFailed) throw new Error(`${stats.filesFailed} files failed`)
 }
+else if (tool === 'zig' && !isolatedDeclarations) {
+  const zig = await import('./native-zig')
+  if (!zig.ZIG_CONTEXT_AVAILABLE) throw new Error('Pinned Zig context ABI could not be loaded')
+  // Resolve and snapshot authored dependencies; inference and emission run in Zig.
+  // The planner's startup, graph reads and context serialization are timed too.
+  const { planNativeDeclarationProject } = await import('@stacksjs/dtsx/native-project')
+  const project = await planNativeDeclarationProject({ cwd, root: 'src', entrypoints: ['index.ts'], outdir, isolatedDeclarations: false })
+  for (const file of project.files) {
+    const output = zig.processSourceWithContext(file.source, file.context, true, false)
+    if (!output.trim()) throw new Error(`Empty declaration: ${file.sourceFile}`)
+    await mkdir(dirname(file.outputFile), { recursive: true })
+    await writeFile(file.outputFile, output)
+  }
+}
 else if (['oxc', 'swc', 'zig', 'ts-transpile'].includes(tool)) {
   const oxc = tool === 'oxc' ? await import('oxc-transform') : undefined
   const swc = tool === 'swc' ? await import('@swc/core') : undefined
