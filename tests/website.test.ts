@@ -68,17 +68,15 @@ test('all four full snapshots use the frozen harness, locked native artifacts an
     expect(native.archiveSha256).toBe(artifact.sha256)
     expect(native.bindingSha256).toBe(zigRelease.binding.sha256)
     expect(native.librarySha256).toMatch(/^[a-f\d]{64}$/)
-    if (snapshot.platform === 'linux') {
-      expect(native.target).toBe(artifact.target)
-      expect(native.compiler).toBe(artifact.compiler)
-      expect(native.optimize).toBe(artifact.optimize)
-      expect(native.librarySha256).toBe(artifact.librarySha256)
-    }
+    expect(native.target).toBe(artifact.target)
+    expect(native.compiler).toBe(artifact.compiler)
+    expect(native.optimize).toBe(artifact.optimize)
+    expect(native.librarySha256).toBe(artifact.librarySha256)
     for (const row of data.results) {
       expect(row.version).not.toBe('see lockfile')
       expect(row.sourceFiles).toBe(row.modules + 1)
       expect(row.fixtureSha256).toMatch(/^[a-f\d]{64}$/)
-      if (row.id === 'zig') expect(row.version).toBe(zigRelease.version)
+      if (['dtsx', 'zig', 'dtsx-bundle'].includes(row.id)) expect(row.version).toBe(zigRelease.version)
       if (snapshot.workload === 'annotated' || ['tsc', 'tsgo', 'dtsx', 'zig', 'dtsx-bundle'].includes(row.id)) expect(row.status).toBe('passed')
       if (row.status === 'passed') {
         expect(row.samplesMs).toHaveLength(9)
