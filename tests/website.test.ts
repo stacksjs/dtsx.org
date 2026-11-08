@@ -163,13 +163,15 @@ test('the lab exposes both platforms and both fixture workloads with their raw e
 
 test('the lab publishes the engine benchmark tables with their machine', async () => {
   const html = await Bun.file(join(root, 'dist/benchmarks/index.html')).text()
-  const engine = await Bun.file(join(root, 'public/benchmarks/engine.json')).json() as { machine: { cpu: string, model: string, memoryGB: number }, rows: Array<{ section: string, avgNs: number }> }
+  const engine = await Bun.file(join(root, 'public/benchmarks/engine.json')).json() as { machine: { cpu: string, model: string, memoryGB: number }, rows: Array<{ section: string, tool: string, avgNs: number }> }
   expect(html).toContain('id="engine-heading"')
   expect(html).toContain(engine.machine.cpu)
   expect(html).toContain(engine.machine.model)
   expect(html).toContain('/benchmarks/engine.json')
   const format = (ns: number): string => ns < 1e3 ? `${ns.toFixed(0)} ns` : ns < 1e6 ? `${(ns / 1e3).toFixed(2)} µs` : `${(ns / 1e6).toFixed(2)} ms`
-  for (const row of engine.rows.filter(row => row.section !== 'cached')) expect(html).toContain(format(row.avgNs))
+  // In-process rows for every tool; CLI rows for the executables the page compares.
+  const presented = (row: { section: string, tool: string }): boolean => row.section === 'inproc' || ((row.section === 'cli' || row.section === 'project') && row.tool !== 'dtsx')
+  for (const row of engine.rows.filter(presented)) expect(html).toContain(format(row.avgNs))
 })
 
 test('benchmark pages present one dtsx and keep its JS SDK separate', async () => {
