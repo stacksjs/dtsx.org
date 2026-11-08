@@ -34,6 +34,9 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.4.4
+      - name: Clear the previous snapshot from the measurement output
+        if: ${{ !inputs.qualification_only }}
+        run: bun -e "const fs = await import('node:fs/promises'); await fs.rm(process.env.BENCHMARK_OUTPUT, { force:true })"
       - run: bun install --frozen-lockfile
         working-directory: benchmarks
       - name: Verify fixture and consumer controls outside timing
@@ -42,14 +45,12 @@ jobs:
       - name: Install checksum-pinned native release
         run: bun setup-zig.ts
         working-directory: benchmarks
-      - name: Clear the previous snapshot from the measurement output
-        if: ${{ !inputs.qualification_only }}
-        run: bun -e "const fs = await import('node:fs/promises'); await fs.rm(process.env.BENCHMARK_OUTPUT, { force:true })"
       - name: Run sequential qualified benchmarks
+        id: measure
         run: bun run.ts --workload=${{ matrix.workload }} ${{ inputs.qualification_only && '--smoke --tools=zig' || '' }} ${{ (inputs.qualification_only || matrix.workload == 'annotated') && '--require-all' || '--require-baselines' }}
         working-directory: benchmarks
       - uses: actions/upload-artifact@v7
-        if: always()
+        if: ${{ always() && steps.measure.outcome != 'skipped' }}
         with:
           name: benchmark-results-${{ matrix.os }}-${{ matrix.workload }}
           path: ${{ inputs.qualification_only && format('benchmarks/smoke-{0}.json', matrix.workload) || env.BENCHMARK_OUTPUT }}
