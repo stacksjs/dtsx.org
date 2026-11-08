@@ -1,6 +1,7 @@
 <script server>
 import report from '~/public/benchmarks/results.json'
 import example from '~/resources/data/example.json'
+import { benchmarkName } from '~/resources/functions/benchmark-names'
 const title = 'TypeScript declarations. Ready to ship.'
 const description = 'Generate .d.ts files with Bun. Use the CLI, call the API, and explore transparent benchmarks for your library build.'
 const pathname = '/'
@@ -12,8 +13,8 @@ const typeStack = ['geist', 'satoshi', 'cabinet-grotesk', 'outfit'][(seed * 7) %
 const componentFamilies = ['code-preview', 'benchmark-ledger', 'integration-grid']
 const selectedFamilies = componentFamilies.map((_, index) => componentFamilies[(seed + index) % componentFamilies.length])
 const selectedMotion = ['scroll-reveal', 'sticky-stack']
-const comparison = report.results.filter(row => row.modules === 100 && row.group === 'bundled-project' && row.status === 'passed').sort((a, b) => a.medianMs - b.medianMs)
-const fastestEmitter = report.results.filter(row => row.modules === 100 && row.group === 'project-emit' && row.status === 'passed').sort((a, b) => a.medianMs - b.medianMs)[0].name
+const comparison = report.results.filter(row => row.modules === 100 && row.group === 'bundled-project' && row.status === 'passed').sort((a, b) => a.medianMs - b.medianMs).map(row => ({ ...row, name: benchmarkName(row) }))
+const fastestEmitter = benchmarkName(report.results.filter(row => row.modules === 100 && row.group === 'project-emit' && row.status === 'passed').sort((a, b) => a.medianMs - b.medianMs)[0])
 const codeInput = example.source
 const codeOutput = example.declaration
 </script>

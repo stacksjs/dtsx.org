@@ -2,6 +2,7 @@ import { expect, test } from 'bun:test'
 import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { benchmarkName } from '../resources/functions/benchmark-names'
 
 interface BenchmarkRow {
   id: string
@@ -139,11 +140,11 @@ test('built pages retain content, canonical URLs, and resolvable local assets an
 test('the homepage publishes the actual full-run bundled medians', async () => {
   const html = await Bun.file(join(root, 'dist/index.html')).text()
   for (const row of report.results.filter(row => row.modules === 100 && row.group === 'bundled-project')) {
-    expect(html).toContain(row.name)
+    expect(html).toContain(benchmarkName(row))
     expect(html).toContain(row.medianMs!.toFixed(1))
   }
   const winner = report.results.filter(row => row.modules === 100 && row.group === 'project-emit').sort((a, b) => a.medianMs! - b.medianMs!)[0]
-  expect(html).toContain(`${winner.name} has the lowest median`)
+  expect(html).toContain(`${benchmarkName(winner)} has the lowest median`)
 })
 
 
@@ -169,4 +170,15 @@ test('the lab publishes the engine benchmark tables with their machine', async (
   expect(html).toContain('/benchmarks/engine.json')
   const format = (ns: number): string => ns < 1e3 ? `${ns.toFixed(0)} ns` : ns < 1e6 ? `${(ns / 1e3).toFixed(2)} µs` : `${(ns / 1e6).toFixed(2)} ms`
   for (const row of engine.rows.filter(row => row.section !== 'cached')) expect(html).toContain(format(row.avgNs))
+})
+
+test('benchmark pages present one dtsx and keep its JS SDK separate', async () => {
+  for (const route of ['', 'benchmarks/']) {
+    const html = await Bun.file(join(root, 'dist', route, 'index.html')).text()
+    expect(html).not.toContain('zig-dtsx')
+  }
+  const lab = await Bun.file(join(root, 'dist/benchmarks/index.html')).text()
+  expect(lab).toContain('dtsx JS SDK')
+  expect(lab).toContain('id="engine-sdk-heading"')
+  expect(lab).not.toContain('process call')
 })
