@@ -184,3 +184,10 @@ test('benchmark pages present one dtsx and keep its JS SDK separate', async () =
   expect(lab).toContain('id="engine-sdk-heading"')
   expect(lab).not.toContain('process call')
 })
+
+test('the JS SDK is described as running its native engine in-process', async () => {
+  const lab = await Bun.file(join(root, 'dist/benchmarks/index.html')).text()
+  expect(lab).toContain('runs its bundled native engine through Bun FFI')
+  expect(lab).toContain('falling back to its TypeScript engine where no native library applies')
+  expect(lab).not.toContain('The dtsx TypeScript SDK against')
+})

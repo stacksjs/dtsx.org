@@ -56,14 +56,14 @@ const engineTable = (section, title, detail, tools, columns) => {
 const engineInputs = engineReport.inputs.map(input => input.name)
 const engineProjects = engineReport.projects.map(count => `${count} files`)
 // Result keys: `zig-dtsx` is the native engine, shown as "dtsx"; `dtsx` is the
-// TypeScript SDK, shown as "dtsx JS SDK" and compared only with JavaScript SDKs.
+// @stacksjs/dtsx SDK, shown as "dtsx JS SDK" and compared only with JavaScript SDKs.
 const engineTables = [
   engineTable('inproc', 'In-process API, no cache', 'One file per call: dtsx through its native binding, oxc-transform through N-API. Every dtsx cache is cleared on every iteration.', [{ key: 'zig-dtsx', label: 'dtsx' }, { key: 'oxc-transform', label: 'oxc-transform' }], engineInputs),
   engineTable('cli', 'CLI, single file', 'Each tool runs as an executable, so process startup is included. oxc has no declaration CLI, so it runs through a minimal Bun-compiled wrapper; tsc is TypeScript 7 native with --noCheck.', [{ key: 'zig-dtsx', label: 'dtsx' }, { key: 'oxc', label: 'oxc' }, { key: 'tsc', label: 'tsc 7' }], engineInputs),
   engineTable('project', 'CLI, multi-file project', 'A directory of generated modules. dtsx and tsc use multiple threads; oxc has no parallel declaration CLI.', [{ key: 'zig-dtsx', label: 'dtsx' }, { key: 'oxc', label: 'oxc' }, { key: 'tsc', label: 'tsc 7' }], engineProjects),
 ]
 const sdkTables = [
-  engineTable('inproc', 'JS SDK, in-process, no cache', 'The dtsx TypeScript SDK against oxc-transform, whose SDK runs Rust through N-API.', [{ key: 'dtsx', label: 'dtsx JS SDK' }, { key: 'oxc-transform', label: 'oxc-transform' }], engineInputs),
+  engineTable('inproc', 'JS SDK, in-process, no cache', 'The @stacksjs/dtsx SDK, which runs its bundled native engine through Bun FFI, against oxc-transform, whose SDK runs Rust through N-API.', [{ key: 'dtsx', label: 'dtsx JS SDK' }, { key: 'oxc-transform', label: 'oxc-transform' }], engineInputs),
 ].map(table => ({ ...table, id: `${table.id}-sdk` }))
 const engineBundled = engineReport.tsdown ? [...new Set(engineReport.tsdown.results.map(row => row.files))].map(files => {
   const rows = engineReport.tsdown.results.filter(row => row.files === files)
@@ -127,7 +127,7 @@ const workload = state('annotated')
     </tbody></table></div>
     @endforeach
     <h3 id="engine-sdk-heading">JavaScript SDK.</h3>
-    <p>The @stacksjs/dtsx SDK, which powers the bundler and build-tool plugins, called in-process like the JavaScript SDKs it is compared with.</p>
+    <p>The @stacksjs/dtsx SDK, which powers the bundler and build-tool plugins, called in-process like the JavaScript SDKs it is compared with. It ships the native engine for each platform and runs it in-process, falling back to its TypeScript engine where no native library applies.</p>
     @foreach(sdkTables as table)
     <div class="table-scroll"><table class="results-table" id="{{ table.id }}"><caption>{{ table.title }}. {{ table.detail }}</caption><thead><tr><th scope="col">Tool</th>@foreach(table.columns as column)<th scope="col">{{ column }}</th>@endforeach</tr></thead><tbody>
     @foreach(table.rows as row)
