@@ -1,6 +1,6 @@
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { processSource } from '@stacksjs/dtsx'
+import { processSource } from '@dtsx/dtsx'
 import { generateStaticSite } from '@stacksjs/stx/ssg'
 import { CSSGenerator, defaultConfig } from '@stacksjs/ts-css/engine'
 

@@ -22,7 +22,7 @@ const theme = useColorMode({ attribute: 'data-theme' })
 const preview = state('output')
 const copied = state(false)
 async function copyInstall() {
-  copied.set(await copyToClipboard('bun add -d @stacksjs/dtsx'))
+  copied.set(await copyToClipboard('bun add -d @dtsx/dtsx'))
 }
 </script>
 @nolayout
@@ -37,7 +37,7 @@ async function copyInstall() {
       <h1 id="hero-title" class="max-w-6xl">Your types.<br><span>Ready to ship.</span></h1>
       <p class="hero-description">TypeScript declarations that fit your workflow. Generate <code>.d.ts</code> files with Bun, from your first export to your next release.</p>
       <div class="hero-actions"><a class="button button-primary" href="/docs/">Start building <span aria-hidden="true">↗</span></a><a class="text-link" href="/benchmarks/">See the benchmarks <span aria-hidden="true">→</span></a></div>
-      <button class="install-command" @click="copyInstall()" type="button" aria-label="Copy install command"><span class="command-prompt" aria-hidden="true">$</span><code>bun add -d @stacksjs/dtsx</code><span class="copy-label" aria-live="polite">{{ copied() ? 'Copied' : 'Copy' }}</span></button>
+      <button class="install-command" @click="copyInstall()" type="button" aria-label="Copy install command"><span class="command-prompt" aria-hidden="true">$</span><code>bun add -d @dtsx/dtsx</code><span class="copy-label" aria-live="polite">{{ copied() ? 'Copied' : 'Copy' }}</span></button>
     </div>
     <div class="hero-art" aria-label="TypeScript source becomes a declaration file">
       <div class="source-sheet"><span class="file-caption">src/index.ts</span><div class="source-lines" aria-hidden="true"><span>export</span> function greet(...) {<br>&nbsp; return `Hello, ${options.name}`<br>}</div><span class="source-extension">.ts</span></div>

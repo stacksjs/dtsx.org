@@ -159,3 +159,18 @@ test('the lab exposes both platforms and both fixture workloads with their raw e
     for (const row of snapshot.report.results.filter(row => row.status === 'passed')) expect(html).toContain(row.medianMs!.toFixed(1))
   }
 })
+
+test('the site installs and imports dtsx as @dtsx/dtsx', async () => {
+  // dtsx was published as @stacksjs/dtsx up to v0.11.36.
+  const formerName = ['@stacksjs', 'dtsx'].join('/')
+  for (const route of ['', 'docs/']) {
+    const html = await readFile(join(root, 'dist', route, 'index.html'), 'utf8')
+    expect(html).toContain('bun add -d @dtsx/dtsx')
+    expect(html).not.toContain(formerName)
+  }
+  const docs = await readFile(join(root, 'dist/docs/index.html'), 'utf8')
+  expect(docs).toContain('@dtsx/dtsx/vite')
+  const manifest = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'))
+  expect(manifest.dependencies[formerName]).toBeUndefined()
+  expect(manifest.dependencies['@dtsx/dtsx']).toMatch(/^\d+\.\d+\.\d+$/)
+})
