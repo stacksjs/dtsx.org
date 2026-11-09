@@ -1,8 +1,8 @@
 {
-  "version": "0.11.33",
+  "version": "0.11.34",
   "repository": "stacksjs/dtsx",
-  "tag": "v0.11.33",
-  "commit": "a914c3224fa9f13f130157f245223a74ecfaaef5",
+  "tag": "v0.11.34",
+  "commit": "0aa58439151012274e7e22dbef48ed13c62cc1ea",
   "binding": {
     "path": "packages/zig-dtsx/src/index.ts",
     "sha256": "47cdaba50ed312bd2a4e69b97735a4d85e5e6ec96a32d997c5728acd93271580"
@@ -14,54 +14,54 @@
   "libraries": {
     "linux-x64": {
       "asset": "zig-dtsx-lib-linux-x64.tar.gz",
-      "sha256": "885b98d5b626f8de43dfa8f6e2288b16139bc1b5cdae61d2e55103d394123cae",
+      "sha256": "5ac7aef4095c7c59c9cbe66dcf1c6c0ca15992308b91375ab62fe386d3d3092b",
       "file": "libzig-dtsx.so",
-      "librarySha256": "79b0c18f8cc354564e689184bd1e2b2f3b9be7633dbf7cab2cf901d6cfe8eb99",
+      "librarySha256": "ab7b104b11fb5d7615aa703857bb611c9b6fb83f80b37be45d265fc405cf6b4c",
       "target": "x86_64-linux-gnu.2.17",
       "compiler": "0.17.1",
       "optimize": "fast"
     },
     "linux-arm64": {
       "asset": "zig-dtsx-lib-linux-arm64.tar.gz",
-      "sha256": "741e47797f0d85921e9099779d357d310db9e2811a4c2378645321e551942a5c",
+      "sha256": "6d0769e43c1577a1195bc6c03a06ff52ed44b541ce877ea77a45b179d546160a",
       "file": "libzig-dtsx.so",
-      "librarySha256": "96b59334f278ae8837920891b6e4dafe090374489a91185c002b76a717a984cf",
+      "librarySha256": "beb4c0ebe0dea04dc2e33cc06e842e6599f0d1d3d24ee9f8dbb56941ad54063e",
       "target": "aarch64-linux-gnu.2.17",
       "compiler": "0.17.1",
       "optimize": "fast"
     },
     "darwin-x64": {
       "asset": "zig-dtsx-lib-darwin-x64.tar.gz",
-      "sha256": "fd39e6b852c4d30b8c1890475c2f2cdc2d56e54086291a89ba53b571f19d68c1",
+      "sha256": "88809281c635e3f29b5b3dcb3e2d38c6a212e64c61c7b71e0a3119558efb3eb3",
       "file": "libzig-dtsx.dylib",
-      "librarySha256": "ff1c2e352b8f01b4997e7629a5ba46be81a0a8c61726a85ee28b7d2281f07acd",
+      "librarySha256": "796a42d02d455627aa3ee71b6e250d6a81bd40d1d3a45d572f846124bd73fae9",
       "target": "x86_64-macos",
       "compiler": "0.17.1",
       "optimize": "fast"
     },
     "darwin-arm64": {
       "asset": "zig-dtsx-lib-darwin-arm64.tar.gz",
-      "sha256": "13ef1d937415d4ab5d2e42fe190446c57d92b7eefd8c4f0784d2a82d0afc5260",
+      "sha256": "a1ce85cfcca2c45800024eef45852882f6eda05e92486dcc4444059a5d58caa2",
       "file": "libzig-dtsx.dylib",
-      "librarySha256": "4a204b31f9304faeb36a2cc6915d53a7ec7cf9305331d75267d502f69d745396",
+      "librarySha256": "e69bf3dc4b62575864ca0c27cafd8e12062ce2749a521d391dbf14d548dba0ba",
       "target": "aarch64-macos",
       "compiler": "0.17.1",
       "optimize": "fast"
     },
     "windows-x64": {
       "asset": "zig-dtsx-lib-windows-x64.tar.gz",
-      "sha256": "70e5d97c5267e5d43178c94fc4fff1e2f4292ba598ad8b21dd87e5f42fa06028",
+      "sha256": "9b3ac341ff3bbbe3d6a972634866ff18e7a33f4976152fc6d6db82e41a9abc6c",
       "file": "zig-dtsx.dll",
-      "librarySha256": "1fa93b1e7d7fc711038faf2d799be2cd64829441cd1bf44493cb13cbb36464ec",
+      "librarySha256": "bb6dd86eea2a5d03976325f69d6e580614b8959d61bd257549ed6ad71641c308",
       "target": "x86_64-windows",
       "compiler": "0.17.1",
       "optimize": "fast"
     },
     "freebsd-x64": {
       "asset": "zig-dtsx-lib-freebsd-x64.tar.gz",
-      "sha256": "4d38e2f1f7bfd4c9c7d3cb3bc4534718d82b762ac447e4b010b241fe05956804",
+      "sha256": "6da869db980bb468385ce94dc868d364d6b5a8ca75960447753b95bdc834cacc",
       "file": "libzig-dtsx.so",
-      "librarySha256": "3aaab2f284f908977981a45bd7c750c11e8eeb7c330747cbaa9663e4365ae708",
+      "librarySha256": "dbd6f2e662725e34384d30e88814a48d4a27120a42a55fc92412debc0ddeea46",
       "target": "x86_64-freebsd",
       "compiler": "0.17.1",
       "optimize": "fast"

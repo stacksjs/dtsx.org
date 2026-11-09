@@ -44,7 +44,7 @@ A failed configuration stays in the results with its emission or consumer diagno
 
 ## Native Zig release provenance
 
-Zig uses `zig-dtsx` v0.11.33 from [GitHub Releases](https://github.com/stacksjs/dtsx/releases/tag/v0.11.33). `bun pin-zig-release.ts v<version>` regenerates `zig-release.json` from a release, verifying every archive against its checksums and provenance first. It pins the release commit, its matching Bun FFI binding, each platform archive and the extracted library by SHA-256. `bun setup-zig.ts` installs under ignored `.native`, verifies hashes and probes the actual system loader before measurement. A benchmark runner does not compile Zig. Downloads, extraction, verification and qualification tests happen outside timing.
+Zig uses `zig-dtsx` v0.11.34 from [GitHub Releases](https://github.com/stacksjs/dtsx/releases/tag/v0.11.34). `bun pin-zig-release.ts v<version>` regenerates `zig-release.json` from a release, verifying every archive against its checksums and provenance first. It pins the release commit, its matching Bun FFI binding, each platform archive and the extracted library by SHA-256. `bun setup-zig.ts` installs under ignored `.native`, verifies hashes and probes the actual system loader before measurement. A benchmark runner does not compile Zig. Downloads, extraction, verification and qualification tests happen outside timing.
 
 The release builds Linux shared libraries for GNU libc 2.17, separately from the standalone musl CLIs. This fixes the earlier Linux `invalid ELF header` loading issue. The pinned metadata records the compiler, target and optimization settings used by the release. Deployment CI qualifies annotated and inferred output on actual Linux x64/arm64 and Apple silicon/Intel macOS runners.
 

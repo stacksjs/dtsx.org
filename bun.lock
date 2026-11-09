@@ -6,7 +6,7 @@
       "name": "stacks",
       "dependencies": {
         "@stacksjs/actions": "^0.75.513",
-        "@stacksjs/dtsx": "0.11.33",
+        "@stacksjs/dtsx": "0.11.34",
         "@stacksjs/env": "^0.75.513",
         "@stacksjs/path": "^0.75.513",
         "@stacksjs/stx": "0.2.807",
@@ -122,7 +122,7 @@
 
     "@stacksjs/docs": ["@stacksjs/docs@0.75.513", "", { "dependencies": { "@stacksjs/bunpress": "^0.2.25", "@stacksjs/config": "0.75.513", "@stacksjs/path": "0.75.513" } }, "sha512-2ZSize0ngJnRRg6HnpBCagWOiWtlr3QRhyS3R6s8dUvqRNfvjRT4dVZ/kUw29iSaCx1zhp27WbFJIRLffzGCFA=="],
 
-    "@stacksjs/dtsx": ["@stacksjs/dtsx@0.11.33", "", { "peerDependencies": { "prettier": "^3.9.10" }, "optionalPeers": ["prettier"], "bin": { "dtsx": "./dist/bin/cli.js" } }, "sha512-ki93CHyRz2c5/F7Z/f53MJSyeaUoV+YWkFM0p6g4pYLRKi4RJzeTrIPGYcAc+csb4OhLbeb3uK8xC1+ZRupmMA=="],
+    "@stacksjs/dtsx": ["@stacksjs/dtsx@0.11.34", "", { "peerDependencies": { "prettier": "^3.9.10" }, "optionalPeers": ["prettier"], "bin": { "dtsx": "./dist/bin/cli.js" } }, "sha512-W/MqGsBkUMgHZX9hTgvPhaaZtFl4KmftJEZaOciKhYJtTCchtWrnoZMCfFf+GbYAcwPFh052PiJ2lPRHlRm24A=="],
 
     "@stacksjs/email": ["@stacksjs/email@0.75.513", "", { "dependencies": { "@stacksjs/config": "0.75.513", "@stacksjs/database": "0.75.513", "@stacksjs/events": "0.75.513", "@stacksjs/logging": "0.75.513", "@stacksjs/mail": "^0.3.11", "@stacksjs/path": "0.75.513", "@stacksjs/storage": "0.75.513", "@stacksjs/strings": "0.75.513", "@stacksjs/stx": "0.2.807", "@stacksjs/ts-cloud": "^0.16.109", "@stacksjs/utils": "0.75.513" }, "peerDependencies": { "@stacksjs/queue": "0.75.513" }, "optionalPeers": ["@stacksjs/queue"] }, "sha512-n/jKvfLTYDXJ2NhsBK7VOTAoT99oOclp4PUJi4VcYIGdW05zr4ivNTXu8oxrqqomUvmx/DwCtin5Ydr1JPSAAQ=="],
 
