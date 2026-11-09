@@ -1,0 +1,18 @@
+export const config = {
+  port: 3000,
+  host: 'localhost',
+  retries: 3,
+}
+
+export const LOG_LEVELS = ['debug', 'info', 'warn'] as const
+
+export let mode = 'production'
+
+export function connect(host = 'localhost', port = 5432) {
+  return { host, port, secure: port === 443 }
+}
+
+export class Client {
+  timeout = 1000
+  static version = '1.0.0'
+}

@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { benchmarkName } from '../resources/functions/benchmark-names'
+import { highlightTs } from '../resources/functions/highlight'
 
 interface BenchmarkRow {
   id: string
@@ -190,4 +191,75 @@ test('the JS SDK is described as running its native engine in-process', async ()
   expect(lab).toContain('runs its bundled native engine through Bun FFI')
   expect(lab).toContain('falling back to its TypeScript engine where no native library applies')
   expect(lab).not.toContain('The dtsx TypeScript SDK against')
+})
+
+test('the site installs dtsx with npm as @dtsx/dtsx', async () => {
+  // dtsx was published as @stacksjs/dtsx up to v0.11.36.
+  const formerName = ['@stacksjs', 'dtsx'].join('/')
+  for (const route of ['', 'docs/']) {
+    const html = await readFile(join(root, 'dist', route, 'index.html'), 'utf8')
+    expect(html).toContain('<code>npm install -D @dtsx/dtsx</code>')
+    expect(html).not.toContain(formerName)
+  }
+  const manifest = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'))
+  expect(manifest.dependencies[formerName]).toBeUndefined()
+  expect(manifest.dependencies['@dtsx/dtsx']).toMatch(/^\d+\.\d+\.\d+$/)
+})
+
+test('the docs show each bundler plugin as @dtsx/<tool>', async () => {
+  const docs = await readFile(join(root, 'dist/docs/index.html'), 'utf8')
+  expect(docs).toContain('<span class="tok-string">\'@dtsx/vite\'</span>')
+  expect(docs).not.toContain('@dtsx/dtsx/vite')
+  for (const name of ['@dtsx/bun', '@dtsx/vite', '@dtsx/esbuild', '@dtsx/tsup', '@dtsx/tsdown', '@dtsx/webpack'])
+    expect(docs).toContain(`<code>${name}</code>`)
+})
+
+test('code samples are syntax highlighted', async () => {
+  const home = await readFile(join(root, 'dist/index.html'), 'utf8')
+  // The hero declaration and the example tabs.
+  expect(home).toMatch(/<code class="hero-code">.*<span class="tok-function">greet<\/span>/s)
+  expect(home).toContain('<span class="tok-type">Options</span>')
+  expect(home).toContain('<span class="tok-type-keyword">string</span>')
+  const docs = await readFile(join(root, 'dist/docs/index.html'), 'utf8')
+  expect(docs).toContain('<span class="tok-function">defineConfig</span>')
+  expect(docs).not.toMatch(/<pre><code>import \{/)
+})
+
+test('the d.ts caret blinks unless reduced motion is requested', async () => {
+  const home = await readFile(join(root, 'dist/index.html'), 'utf8')
+  expect(home).toContain('<span class="file-cursor" aria-hidden="true">_</span>')
+  const css = await readFile(join(root, 'public/assets/site.css'), 'utf8')
+  expect(css).toMatch(/\.file-cursor\{[^}]*animation:caret-blink/)
+  expect(css).toContain('@keyframes caret-blink')
+  expect(css).toMatch(/prefers-reduced-motion:reduce\)\{\.file-cursor\{animation:none\}/)
+})
+
+test('the showcase compares dtsx with a current tsc snapshot and keeps the defaults', async () => {
+  const source = await readFile(join(root, 'resources/data/showcase.ts.txt'), 'utf8')
+  const tsc = JSON.parse(await readFile(join(root, 'resources/data/showcase.tsc.json'), 'utf8'))
+  // Rerun `bun scripts/showcase-tsc.ts` after changing the showcase source.
+  expect(tsc.sourceSha256).toBe(createHash('sha256').update(source).digest('hex'))
+  expect(tsc.declaration).not.toContain('@defaultValue')
+  const showcase = JSON.parse(await readFile(join(root, 'resources/data/showcase.json'), 'utf8'))
+  expect(showcase.source).toBe(source)
+  const home = await readFile(join(root, 'dist/index.html'), 'utf8')
+  const dtsxPanel = home.slice(home.indexOf('class="showcase-dtsx showcase-panel"'), home.indexOf('class="showcase-points"'))
+  expect(dtsxPanel).toContain('<span class="tok-tag">@defaultValue</span> 3000')
+  expect(dtsxPanel).toContain(`${(showcase.declaration.match(/@defaultValue/g) || []).length} defaults kept`)
+  expect(home).toContain(`${tsc.compiler} --declaration`)
+})
+
+test('the highlighter tags TypeScript tokens and escapes HTML', () => {
+  const html = highlightTs("/** @defaultValue `{ a: 1 }` */\nexport declare const LOG_LEVELS: readonly ['a<b'];\nexport function greet(options: Options): string { return options.name }")
+  expect(html).toContain('<span class="tok-comment">/** <span class="tok-tag">@defaultValue</span> <span class="tok-doc-code">`{ a: 1 }`</span> */</span>')
+  expect(html).toContain('<span class="tok-keyword">export</span>')
+  // ALL_CAPS names are constants, PascalCase names are types.
+  expect(html).toContain('<span class="tok-name">LOG_LEVELS</span>')
+  expect(html).not.toContain('tok-type">LOG_LEVELS')
+  expect(html).toContain('<span class="tok-type">Options</span>')
+  expect(html).toContain('<span class="tok-string">\'a&lt;b\'</span>')
+  expect(html).toContain('<span class="tok-function">greet</span>')
+  expect(html).toContain('<span class="tok-name">options</span>')
+  // A member access after a dot stays plain.
+  expect(html).toContain('<span class="tok-punct">.</span>name')
 })

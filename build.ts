@@ -1,6 +1,6 @@
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { processSource } from '@stacksjs/dtsx'
+import { processSource } from '@dtsx/dtsx'
 import { generateStaticSite } from '@stacksjs/stx/ssg'
 import { CSSGenerator, defaultConfig } from '@stacksjs/ts-css/engine'
 
@@ -10,6 +10,13 @@ const declaration = processSource(source, 'example.ts', true, [], true)
 if (!declaration.includes('declare function greet')) throw new Error('Example declaration generation failed')
 await mkdir(join(root, 'resources/data'), { recursive: true })
 await writeFile(join(root, 'resources/data/example.json'), JSON.stringify({ source, declaration }, null, 2))
+
+// The homepage showcase: dtsx's declaration is emitted here from the published
+// SDK; tsc's comes from a snapshot (scripts/showcase-tsc.ts).
+const showcaseSource = await readFile(join(root, 'resources/data/showcase.ts.txt'), 'utf8')
+const showcaseDeclaration = processSource(showcaseSource, 'showcase.ts')
+if (!showcaseDeclaration.includes('@defaultValue')) throw new Error('Showcase declaration lost its @defaultValue annotations')
+await writeFile(join(root, 'resources/data/showcase.json'), `${JSON.stringify({ source: showcaseSource, declaration: showcaseDeclaration }, null, 2)}\n`)
 await rm(join(root, 'dist'), { recursive: true, force: true })
 const result = await generateStaticSite({
   pagesDir: join(root, 'resources/views'),

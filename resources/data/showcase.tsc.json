@@ -1,0 +1,5 @@
+{
+  "compiler": "tsc 6.0.3",
+  "sourceSha256": "6e29c45c269fca0d60e094fab39fb9a37d1595d95e78bddd9cb9deba75c2be06",
+  "declaration": "export declare const config: {\n    port: number;\n    host: string;\n    retries: number;\n};\nexport declare const LOG_LEVELS: readonly [\"debug\", \"info\", \"warn\"];\nexport declare let mode: string;\nexport declare function connect(host?: string, port?: number): {\n    host: string;\n    port: number;\n    secure: boolean;\n};\nexport declare class Client {\n    timeout: number;\n    static version: string;\n}"
+}
