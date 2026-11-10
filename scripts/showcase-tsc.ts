@@ -1,6 +1,9 @@
 /**
  * Regenerate tsc's declaration for the homepage showcase.
  *
+ * Run it after installing the lab (`cd benchmarks && bun install`); it is left
+ * out of the site typecheck because CI does not install the lab.
+ *
  * The site itself runs TypeScript 7, which has no JavaScript API, so tsc's
  * side of the comparison is a snapshot made with the benchmark lab's pinned
  * TypeScript 6. The snapshot records the source hash; the website tests fail

@@ -10,5 +10,5 @@
     "types": ["bun"]
   },
   "include": ["build.ts", "scripts/**/*.ts", "tests/website.test.ts", "config/cloud.ts", "config/css.ts"],
-  "exclude": ["benchmarks", "node_modules", "storage"]
+  "exclude": ["benchmarks", "node_modules", "storage", "scripts/showcase-tsc.ts"]
 }
