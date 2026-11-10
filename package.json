@@ -49,7 +49,7 @@
     "benchmark:smoke": "cd benchmarks && bun setup-zig.ts && bun run.ts --smoke"
   },
   "dependencies": {
-    "@dtsx/dtsx": "0.11.38",
+    "@dtsx/dtsx": "0.11.39",
     "@stacksjs/actions": "^0.75.513",
     "@stacksjs/env": "^0.75.513",
     "@stacksjs/path": "^0.75.513",
