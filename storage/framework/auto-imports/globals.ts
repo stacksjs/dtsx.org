@@ -10,6 +10,7 @@ Object.assign(globalThis, autoImports)
 
 // TypeScript declarations
 declare global {
+  const benchmarkName: typeof autoImports.benchmarkName
   const increment: typeof autoImports.increment
   const decrement: typeof autoImports.decrement
   const reset: typeof autoImports.reset
@@ -17,6 +18,7 @@ declare global {
   const isDark: typeof autoImports.isDark
   const preferredDark: typeof autoImports.preferredDark
   const toggleDark: typeof autoImports.toggleDark
+  const highlightTs: typeof autoImports.highlightTs
 }
 
 export {}
