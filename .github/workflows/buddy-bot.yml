@@ -83,7 +83,7 @@ jobs:
           persist-credentials: true
 
       - name: Setup Pantry
-        uses: pantry-pm/pantry/packages/action@cdb82193cb344c2b881a88ea79f88243f5522e0f # v0.11.75
+        uses: pantry-pm/pantry/packages/action@f6a85d762e728b7f91e3bebe700f08d0dc5ee5e0 # v0.11.214
         with:
           version: '0.11.75'
           install: 'false'
