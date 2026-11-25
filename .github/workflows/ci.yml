@@ -28,7 +28,7 @@ jobs:
         run: ./buddy build:views
       - name: Verify pages and benchmark evidence
         run: bun run test
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@v7.0.2
         with:
           name: website
           path: dist
